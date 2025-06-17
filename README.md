@@ -47,7 +47,7 @@ Product-Management/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/Product-Management.git
+git clone https://github.com/salemovic99/Product-Management.git
 cd Product-Management
 ```
 
@@ -111,6 +111,4 @@ The backend uses custom QR styles via:
 
 ---
 
-## 📄 License
 
-This project is open source under the [MIT License](LICENSE).
