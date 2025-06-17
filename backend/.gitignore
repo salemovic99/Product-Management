@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+.env
+venv/
+dist/
+build/
+*.egg-info/
+*.sqlite3
+*.db
+
+# VSCode or JetBrains IDEs
+.vscode/
+.idea/
+
+# Docker
+*.pid
+*.log
+.DS_Store
+
+# QR code output directory (if generated)
+qr_codes/
