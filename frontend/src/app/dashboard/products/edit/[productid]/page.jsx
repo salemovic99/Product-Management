@@ -190,16 +190,21 @@ const formattedDate = now.toLocaleString(undefined, {
       });
 
        if (!response.ok){
-                        toast.error('Something went wrong : ' + (await response.json()).detail)                    
-                        }
+          toast.error('Something went wrong : ' + (await response.json()).detail) 
+          return;                   
+        }
 
       setSuccess(true);
       
       toast.success('Product updated successfully',{
                           description : 'create at ' + formattedDate
                         });
+      //return to the previous page after successful update
+      setTimeout(() => {
+        window.history.back();
+      }, 500);
       // Reset success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), 1500);
 
     } catch (err) {      
       toast.error(err.message || "Something went wrong")
@@ -269,7 +274,7 @@ const formattedDate = now.toLocaleString(undefined, {
       <div className="max-w-xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <Button variant="outline" size="sm" onClick={goBack}>
+            <Button variant="outline" size="sm" onClick={goBack} className={`cursor-pointer`}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>

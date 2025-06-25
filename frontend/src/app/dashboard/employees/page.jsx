@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Input } from '../../../components/ui/input';
-import { Plus, Edit, Trash2, X, Check, Search, Building2,LocationEdit, BriefcaseBusiness } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Check, Search, Building2,LocationEdit, BriefcaseBusiness, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '../../../components/ui/card';
 import {
   AlertDialog,
@@ -36,19 +36,24 @@ import {
   SelectValue,
 } from "../../../components/ui/select"
 
+import { Label } from '../../../components/ui/label';
+
 import { toast } from "sonner"
 
 
 // const API_BASE_URL = 'http://127.0.0.1:8000';
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 const Employees = () => {
 
-const now = new Date();
-const formattedDate = now.toLocaleString(undefined, {
-  dateStyle: "medium",
-  timeStyle: "medium",
-}); // e.g., "Jun 15, 2025, 4:45 PM"
+  const now = new Date();
+  const formattedDate = now.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  }); // e.g., "Jun 15, 2025, 4:45 PM"
 
+  const [loadingPositions, setLoadingPositions] = useState(true);
+  const [positions, setPositions] = useState([]);
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +64,7 @@ const formattedDate = now.toLocaleString(undefined, {
     name: '',
     employee_id: '',
     phone_number: '',
-    
+    position_id: '',
   });
 
   // pagination
@@ -68,12 +73,14 @@ const formattedDate = now.toLocaleString(undefined, {
   const [pageSize, setPageSize] = useState(5); // Default page size
   const [totalEmployees, setTotalEmployees] = useState(0);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const filteredEmployees = employees.filter(employee =>
      employee.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Fetch departments
+  
   const fetchEmployees = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/employees/?skip=${(currentPage - 1) * pageSize}&limit=${pageSize}`);
@@ -118,6 +125,7 @@ const formattedDate = now.toLocaleString(undefined, {
       toast.success('Employee created successfully',{
         description : 'create at ' + formattedDate
       });
+      setIsSubmitting(false);
       
       return true;
     } catch (err) {
@@ -143,6 +151,8 @@ const formattedDate = now.toLocaleString(undefined, {
       toast.success('Employee updated successfully',{
         description : 'updated at ' + formattedDate
       });
+
+      setIsSubmitting(false);
     
       setEmployees(employees.map(employee => 
         employee.id === id ? updatedEmployee : employee
@@ -182,13 +192,15 @@ const formattedDate = now.toLocaleString(undefined, {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    setIsSubmitting(true);
     
     const success = editingId 
       ? await updateEmployee(editingId, formData)
       : await createEmployee(formData);
     
     if (success) {
-      setFormData({ name: '', employee_id: '',phone_number: '' });
+      setFormData({ name: '', employee_id: '',phone_number: '', position_id: '' });
       setShowForm(false);
       setEditingId(null);
     }
@@ -199,7 +211,8 @@ const formattedDate = now.toLocaleString(undefined, {
     setFormData({
       name: employee.name,
       employee_id: employee.employee_id,
-      phone_number : employee.phone_number
+      phone_number : employee.phone_number,
+      position_id: employee.position_id ? employee.position_id.toString() : '',
     });
     setEditingId(employee.id);
     setShowForm(true);
@@ -207,19 +220,39 @@ const formattedDate = now.toLocaleString(undefined, {
 
   // Handle cancel
   const handleCancel = () => {
-    setFormData({ name: '', employee_id: '',phone_number: '' });
+    setFormData({ name: '', employee_id: '',phone_number: '', position_id: '' });
     setShowForm(false);
     setEditingId(null);
     setError('');
   };
 
+   const fetchPositions = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/positions/?skip=0&limit=100`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          setPositions(data);
+        } else {
+          console.error("Failed to fetch locations");
+        }
+      } catch (err) {
+        console.error("Error fetching locations:", err);
+      } finally {
+        setLoadingPositions(false);
+      }
+    };
+
   useEffect(() => {
     fetchEmployees();
   }, [pageSize, currentPage]);
 
+  useEffect(() => {
+  fetchPositions(); 
+}, []);
+
  if (loading) {
   return (
-
     <TableLoadingSkeleton></TableLoadingSkeleton>
   );
 }
@@ -324,18 +357,58 @@ const formattedDate = now.toLocaleString(undefined, {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter phone number"
                   />
+                  <span className={`text-sm text-gray-500`}>phone number must be at least 9 numbers</span>
+                </div>
+
+                {/* location Dropdown */}
+                <div className="space-y-2">
+                  
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Position name  *
+                  </label>
+                  {loadingPositions ? (
+                    <div className="flex items-center space-x-2 p-3 border rounded-md">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm text-gray-500">Loading Positions...</span>
+                    </div>
+                  ) : (
+                    <Select 
+                      value={formData.position_id} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, position_id: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {positions.map((position) => (
+                          <SelectItem 
+                            key={position.id} 
+                            value={position.id.toString()}
+                          >
+                            {position.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 
                 
-            
                 <div className="flex gap-3 pt-4">
                   <button
+                   disabled={isSubmitting}
                     type="submit"
                     className="flex-1 bg-slate-900 hover:bg-slate-950 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
                   >
-                    <Check size={18} />
-                    {editingId ? 'Update' : 'Create'}
+                    {isSubmitting ? (
+                        <span className="animate-pulse">Saving...</span>
+                      ) : (
+                        <>
+                          <Check size={18} className="mr-2" />
+                          {editingId ? 'Update' : 'Create'}
+                        </>
+                      )}
                   </button>
                   <button
                     type="button"
@@ -405,6 +478,9 @@ const formattedDate = now.toLocaleString(undefined, {
                           Name
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                          Position
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                           Phone Number
                         </th>
 
@@ -423,8 +499,13 @@ const formattedDate = now.toLocaleString(undefined, {
                         <tr key={employee.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
                             <div className="font-medium text-gray-900">{employee.name}</div>
+                            
                             <div className="text-sm text-gray-500">ID: {employee.id}</div>
                           </td>
+                          <td>
+                            {employee.position.name}
+                          </td>
+
                           <td>
                             {employee.phone_number}
                           </td>
@@ -436,7 +517,7 @@ const formattedDate = now.toLocaleString(undefined, {
                             <div className="flex justify-center items-center gap-2">
                               <button
                                 onClick={() => handleEdit(employee)}
-                                className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-2 cursor-pointer"
                                 title="Edit employee"
                               >
                                 <Edit size={16} />

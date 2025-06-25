@@ -28,6 +28,7 @@ COPY . .
 # Build the Next.js application
 RUN npm run build
 
+
 # --- Runner Stage (Production Image) ---
 FROM node:20-alpine AS runner
 # Set working directory

@@ -24,7 +24,8 @@ import {
   Box,
   LocationEdit,
   BriefcaseBusiness,
-  QrCode
+  QrCode,
+  Award
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -52,10 +53,12 @@ const DashboardSideBar = ({ sidebarOpen, setSidebarOpen, darkMode }) => {
     { name: 'Products', icon: Box, href: '/dashboard/products', current: false },
     { name: 'Locations', icon: LocationEdit, href: '/dashboard/locations', current: false },
     { name: 'Employees', icon: BriefcaseBusiness, href: '/dashboard/employees', current: false },
+    { name: 'Positions', icon: Award, href: '/dashboard/positions', current: false },
     { name: 'Scan QR Code', icon: QrCode, href: '/dashboard/qrcodescan', current: false },
     ...(isAdmin ? [{ name: 'Users', icon: Users, href: '/admin' }] : []),
     { name: 'Settings', icon: Settings, href: '#', current: false },
   ];
+  
 
 
  
@@ -105,6 +108,9 @@ const DashboardSideBar = ({ sidebarOpen, setSidebarOpen, darkMode }) => {
                   </Link>
                 );
               })}
+
+              
+
             </nav>
 
             

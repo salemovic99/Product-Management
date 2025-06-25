@@ -10,10 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../..
 import { Skeleton } from "../../components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 const Dashboard = () => {
-   const { isLoaded, isSignedIn, user } = useUser();
+
+  const { isLoaded, isSignedIn, user } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -42,6 +44,8 @@ const Dashboard = () => {
         setProductsCount(productsData.count);
         setEmployeesCount(employeesData.count);
         setLocationsCount(locationsData.count);
+        console.log( "api url : " + API_BASE_URL)
+        console.log( "api url env : " + process.env.NEXT_PUBLIC_BACKEND_URL)
       } catch (error) {
         console.error("Error fetching counts:", error);
       }

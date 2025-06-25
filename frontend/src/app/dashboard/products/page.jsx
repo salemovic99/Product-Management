@@ -78,8 +78,6 @@ export default function ProductsPage() {
     // );
 
     
-
-
     const filteredProducts = products.filter(product => {
     
         const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -170,7 +168,20 @@ export default function ProductsPage() {
         fetchLocations();
     }, [pageSize,currentPage]);
 
-    
+    const getStatusColor = (status) => {
+     switch (status.toLowerCase()) {
+    case "in_use":
+      return "bg-green-200 text-green-800";
+    case "damaged":
+      return "bg-red-200 text-red-800";
+    case "lost":
+      return "bg-yellow-200 text-yellow-800";
+    case "under_repair":
+      return "bg-blue-200 text-blue-800";
+    default:
+      return "bg-gray-200 text-gray-800";
+  }
+  };
 
     if (loading) {
       return (
@@ -216,7 +227,7 @@ export default function ProductsPage() {
 
                     {/* Products List */}
                     <Card className={` flex flex-col justify-between`}>
-                        <CardHeader className=" grid grid-cols-3 gap-4">
+                        <CardHeader className=" grid grid-clos-1 md:grid-cols-3 gap-4">
 
                             {/* Search */}
                             <div className="relative ">
@@ -297,11 +308,14 @@ export default function ProductsPage() {
                                                         Serial Number
                                                     </th>
                                                     
-                                                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                                    {/* <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                                                         With Employee
-                                                    </th>
+                                                    </th> */}
                                                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                                                         Location Name
+                                                    </th>
+                                                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                                        Status
                                                     </th>
                                                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
                                                         In Warehouse
@@ -331,7 +345,7 @@ export default function ProductsPage() {
                                                             <div className="text-sm text-gray-700 max-w-xs truncate">{product.serial_number}</div>
                                                         </td>
                                                        
-                                                        <td className="px-6 py-4">
+                                                        {/* <td className="px-6 py-4">
                                                             <div className="text-sm text-gray-700 max-w-xs truncate">{product.employee == null ?  
                                                                         <Badge
                                                                             variant="secondary"
@@ -341,9 +355,16 @@ export default function ProductsPage() {
                                                                             In warehouse
                                                                         </Badge>
                                                                  : product.employee.name}</div>
-                                                        </td>
+                                                        </td> */}
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm text-gray-700 max-w-xs truncate">{product.location.name}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="text-sm text-gray-700 max-w-xs truncate">
+                                                                <Badge className={`${getStatusColor(product.status?.name)}`} >
+                                                                    {product.status?.name}
+                                                                </Badge>
+                                                            </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm text-gray-700 max-w-xs truncate">
@@ -366,6 +387,7 @@ export default function ProductsPage() {
                                                                 </Badge>}
                                                             </div>
                                                         </td>
+                                                        
                                                         <td className="px-6 py-4">
                                                             <div className="flex justify-end space-x-3">
                                                                
@@ -419,7 +441,7 @@ export default function ProductsPage() {
                                                 <CardContent className="p-4">
                                                     <div className="flex items-start space-x-4">
                                                         <Avatar className="h-12 w-12 flex-shrink-0">
-                                                            <AvatarImage src={`http://localhost:8000/${product.qr_code_image}`} />
+                                                            <AvatarImage src={`http://localhost:8000/${product.dynamic_qr_code}`} />
                                                             <AvatarFallback>QR</AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex-1 min-w-0">
@@ -430,27 +452,27 @@ export default function ProductsPage() {
                                                                     <p className="text-sm text-gray-700 line-clamp-2">{product.description}</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center justify-end space-x-4 mt-3 pt-3 border-t border-gray-100">
+                                                            <div className="flex items-center justify-end space-x-3 mt-3 pt-3 border-t border-gray-100">
                                                                 <a 
                                                                     href={`http://localhost:8000/${product.qr_code_image}`} 
                                                                     target="_blank" 
                                                                     rel="noopener noreferrer"
-                                                                    className="text-green-600 hover:text-green-800 p-1"
+                                                                    className=" p-1"
                                                                     title="View QR Code"
                                                                 >
                                                                     <Eye className="h-5 w-5" />
                                                                 </a>
                                                                 <Link 
                                                                     href={`/dashboard/edit/${product.id}`}
-                                                                    className="text-indigo-600 hover:text-indigo-800 p-1"
+                                                                    className=" p-1"
                                                                     title="Edit Product"
                                                                 >                        
-                                                                    <Edit className="h-5 w-5" />                                
+                                                                    <Edit className="h-4 w-4" />                                
                                                                 </Link>
 
                                                                 <Link 
                                                                     href={`/dashboard/products/details/${product.id}`}
-                                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                                    className=""
                                                                     title="details"
                                                                 >                        
                                                                     <ReceiptText className="h-4 w-4" /> 

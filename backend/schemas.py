@@ -1,6 +1,23 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime
+
+# Position Schemas
+class PositionBase(BaseModel):
+    name: str
+
+class PositionCreate(PositionBase):
+    pass
+
+class PositionUpdate(BaseModel):
+    name: Optional[str] = None
+
+class Position(PositionBase):
+    id: int
+    
+    class Config:
+        from_attributes = True
+
 
 # Location Schemas
 class LocationBase(BaseModel):
@@ -25,6 +42,7 @@ class EmployeeBase(BaseModel):
     name: str
     employee_id: int
     phone_number: Optional[str] = None
+    position_id: int
 
 class EmployeeCreate(EmployeeBase):
     pass
@@ -33,10 +51,19 @@ class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
     employee_id: Optional[int] = None
     phone_number: Optional[str] = None
+    position_id: Optional[int] = None
 
 class Employee(EmployeeBase):
     id: int
+    position: Optional[Position] = None
     
+    class Config:
+        from_attributes = True
+
+class Status(BaseModel):
+    id: int
+    name: str
+
     class Config:
         from_attributes = True
 
@@ -52,6 +79,7 @@ class ProductBase(BaseModel):
     warranty_expire: Optional[date] = None
     note: Optional[str] = None
     dynamic_qr_code: Optional[str] = None
+    status_id: Optional[int]
 
 class ProductCreate(ProductBase):
     pass
@@ -67,14 +95,19 @@ class ProductUpdate(BaseModel):
     warranty_expire: Optional[date] = None
     note: Optional[str] = None
     dynamic_qr_code: Optional[str] = None
+    status_id: Optional[int]=None
 
 class Product(ProductBase):
     id: int
     location: Optional[Location] = None
     employee: Optional[Employee] = None
+    status: Optional[Status] = None
     
     class Config:
         from_attributes = True
+
+
+
 
 # Extended schemas with relationships
 class LocationWithProducts(Location):
@@ -82,3 +115,56 @@ class LocationWithProducts(Location):
 
 class EmployeeWithProducts(Employee):
     products: List[Product] = []
+
+class PositionWithEmployees(Position):
+    employees: List[Employee] = []
+
+
+
+class ProductHistoryBase(BaseModel):
+    product_id: int
+    previous_employee_id: Optional[int] = None
+    new_employee_id: Optional[int] = None
+    previous_location_id: Optional[int] = None
+    new_location_id: Optional[int] = None
+    note: Optional[str] = None
+    changed_by: Optional[str] = None
+
+class ProductHistoryCreate(ProductHistoryBase):
+    pass
+
+class ProductHistoryUpdate(BaseModel):
+    previous_employee_id: Optional[int] = None
+    new_employee_id: Optional[int] = None
+    previous_location_id: Optional[int] = None
+    new_location_id: Optional[int] = None
+    note: Optional[str] = None
+    changed_by: Optional[str] = None
+
+
+
+class ProductHistory(ProductHistoryBase):
+    id: int
+    timestamp: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class ProductFileOut(BaseModel):
+    id: int
+    file_path: str
+    uploaded_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class ProductFile(BaseModel):
+    id: int
+    product_id: int
+    file_path: str
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
+

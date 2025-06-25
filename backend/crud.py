@@ -4,6 +4,8 @@ import models
 import schemas
 from qr import create_qr_code_image, delete_qr_code_image
 from fastapi import HTTPException
+import os
+import shutil
 
 # Location CRUD operations
 def create_location(db: Session, location: schemas.LocationCreate):
@@ -51,6 +53,55 @@ def delete_location(db: Session, location_id: int):
     db.commit()
     return {"message": f"Location with ID {location_id} Deleted!"}
 
+# Position CRUD operations
+def create_position(db: Session, position: schemas.PositionCreate):
+    db_position = models.Position(**position.model_dump())
+    db.add(db_position)
+    db.commit()
+    db.refresh(db_position)
+    return db_position
+
+def get_position(db: Session, position_id: int):
+    return db.query(models.Position).filter(models.Position.id == position_id).first()
+
+def get_positions(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Position).offset(skip).limit(limit).all()
+
+def update_position(db: Session, position_id: int, position: schemas.PositionUpdate):
+    db_position = db.query(models.Position).filter(models.Position.id == position_id).first()
+
+    if not db_position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    
+    # Update position fields
+    update_data = position.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_position, field, value)
+    
+    db.commit()
+    db.refresh(db_position)
+    return db_position
+
+def delete_position(db: Session, position_id: int):
+    db_position = db.query(models.Position).filter(models.Position.id == position_id).first()
+
+    if not db_position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    
+    # Check if the position is referenced by any employees
+    is_in_use = db.query(models.Employee).filter(models.Employee.position_id == position_id).first()
+    if is_in_use:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete position {position_id}: it is still assigned to an employee."
+        )
+    
+    db.delete(db_position)
+    db.commit()
+    return {"message": f"Position with ID {position_id} Deleted!"}
+
+
+
 # Employee CRUD operations
 def create_employee(db: Session, employee: schemas.EmployeeCreate):
     db_employee = models.Employee(**employee.model_dump())
@@ -97,7 +148,7 @@ def delete_employee(db: Session, unique_system_id: int):
 
     db.delete(db_employee)
     db.commit()
-    return db_employee
+    return {"message": f"Employee with ID {unique_system_id} deleted successfully."}
 
 # Product CRUD operations
 def create_product(db: Session, product: schemas.ProductCreate):
@@ -148,6 +199,28 @@ def update_product(db: Session, product_id: int, product: schemas.ProductUpdate)
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+
+
+    # Check if the serial number or our serial number is being updated
+    if product.serial_number and db_product.serial_number != product.serial_number:
+        existing_product = db.query(models.Product).filter(models.Product.serial_number == product.serial_number).first()
+        if existing_product:
+            raise HTTPException(status_code=400, detail="Serial number already exists for another product")
+
+   
+     # Determine what fields are being updated
+    update_data = product.model_dump(exclude_unset=True)
+
+    # If the product is being moved to a different location or assigned to an employee, update the history
+    changes = {}
+
+    if "employee_id" in update_data and db_product.employee_id != product.employee_id:
+        changes["employee"] = (db_product.employee_id, product.employee_id)
+
+    if "location_id" in update_data and db_product.location_id != product.location_id:
+        changes["location"] = (db_product.location_id, product.location_id)
+
+
     
     # Update product fields
     update_data = product.model_dump(exclude_unset=True)
@@ -156,7 +229,22 @@ def update_product(db: Session, product_id: int, product: schemas.ProductUpdate)
     
     db.commit()
     db.refresh(db_product)
+
+    # Log to history if there were assignment changes
+    if changes:
+        history = schemas.ProductHistoryCreate(
+            product_id=product_id,
+            previous_employee_id=changes.get("employee", (None, None))[0],
+            new_employee_id=changes.get("employee", (None, None))[1],
+            previous_location_id=changes.get("location", (None, None))[0],
+            new_location_id=changes.get("location", (None, None))[1],
+            note = "note",
+            changed_by="admin"  # You can customize this if you have auth
+        )
+        create_product_history(db, history)
         
+
+      
     return {"message" :f"product with ID {product_id} updated!"}
 
 def delete_product(db: Session, product_id: int):
@@ -175,8 +263,54 @@ def delete_product(db: Session, product_id: int):
             # Optional: log or handle if file deletion fails
             print(f"Warning: Failed to delete QR code image. Reason: {e}")
     
+    # Delete all files related to this product from the server
+    files = get_product_files(product_id, db)
+    if files:
+        for file_record in files:
+            file_path = file_record.file_path
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(f"Warning: Failed to delete file {file_path}. Reason: {e}")
+
+     # ✅ Delete the product-specific folder
+    product_folder_path = f"uploaded_files/product_{product_id}"
+    try:
+        if os.path.exists(product_folder_path):
+            shutil.rmtree(product_folder_path)
+    except Exception as e:
+        print(f"Warning: Failed to delete folder {product_folder_path}. Reason: {e}")
+
     # Delete product from DB
     db.delete(db_product)
     db.commit()
 
     return {"message": f"Product with ID {product_id} deleted successfully."}
+
+# def get_product_history(db: Session, product_id: int, skip: int = 0, limit: int = 100):
+#     return db.query(models.ProductHistory).filter(models.ProductHistory.product_id == product_id).offset(skip).limit(limit).all()
+
+def get_product_history(db: Session, product_id: int, skip: int = 0, limit: int = 100):
+    # Order by timestamp descending to get most recent changes first
+    return db.query(models.ProductHistory).filter(
+        models.ProductHistory.product_id == product_id
+    ).order_by(models.ProductHistory.timestamp.desc()).offset(skip).limit(limit).all()
+
+def create_product_history(db: Session, product_history: schemas.ProductHistoryCreate):
+    db_product_history = models.ProductHistory(**product_history.model_dump())
+    db.add(db_product_history)
+    db.commit()
+    db.refresh(db_product_history)
+    return db_product_history
+
+def get_product_files(product_id: int, db: Session):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    files = db.query(models.ProductFile).filter(models.ProductFile.product_id == product_id).all()
+    return files
+
+def get_statuses(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Status).offset(skip).limit(limit).all()

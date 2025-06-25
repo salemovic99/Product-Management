@@ -1,5 +1,4 @@
-version: '3.8'
-
+# version: '3.8'
 services:
   backend:
     build:
@@ -10,9 +9,10 @@ services:
     volumes:
     - backend_data:/app/data  # Mount /app/data inside container
     - ./qr_output:/app/qr_codes  # <-- map host folder to container
+    - ./uploaded_files:/app/uploaded_files  # <-- map host folder to container
     environment:
       # Add any environment variables your FastAPI app needs here
-      DATABASE_URL: 'sqlite:///./it_stock_controller.db'
+      DATABASE_URL: 'sqlite:///./data/it_stock_controller.db'
     networks:
       - app_network # Connect to a common network
 
@@ -26,7 +26,7 @@ services:
       # This environment variable needs to be accessible by your Next.js app
       # It tells the Next.js app where to find the backend API.
       # When running inside Docker Compose, services can communicate using their service names
-      NEXT_PUBLIC_BACKEND_URL: 'http://backend:8000'
+      NEXT_PUBLIC_BACKEND_URL: 'http://192.168.22.223:8000'
       CLERK_SECRET_KEY: 'sk_test_hys4OM3eizCdkUVHJux3pSXKln80L1DMc2lat6a2zW' # 'backend' is the service name defined above
       NODE_ENV: production # For production builds, you might want this
     depends_on:

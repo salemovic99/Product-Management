@@ -1,13 +1,13 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Loader2, Building2, User, ArrowLeftRight  } from 'lucide-react';
+import { Loader2, Building2, User, ArrowLeftRight, Route  } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 
-export default function ReassignEmployee({ product, onProductUpdate  }) {
+export default function ReassignStatus({ product, onProductUpdate  }) {
 
 
     
@@ -18,39 +18,39 @@ export default function ReassignEmployee({ product, onProductUpdate  }) {
         });
 
     const [showReassignModal, setShowReassignModal] = useState(false);
-    const [employees, setEmployees] = useState([]);
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    const [statuses, setStatuses] = useState([]);
+    const [selectedStatusId, setSelectedStatusId] = useState('');
     const [ReassignLoading, setReassignLoading] = useState(false);
-    const [loadingEmployees, setLoadingEmployees] = useState(false);
+    const [loadingStatuses, setLoadingStatuses] = useState(false);
 
 
-const fetchEmployees = async () => {
+const fetchStatuses = async () => {
 
-  setLoadingEmployees(true);
+  setLoadingStatuses(true);
   try {
-    const response = await fetch('http://localhost:8000/employees');
+    const response = await fetch('http://localhost:8000/statuses');
     if (response.ok) {
-      const employeesData = await response.json();
-      setEmployees(employeesData);
+      const data = await response.json();
+      setStatuses(data);
     } else {
-      setError("Failed to load employees");
+      setError("Failed to load statuses");
     }
   } catch (err) {
-    setError("Error loading employees: " + err.message);
+    setError("Error loading statuses: " + err.message);
   } finally {
-    setLoadingEmployees(false);
+    setLoadingStatuses(false);
   }
 };
 
 
 const handleTransferLocation = async () => {
-  if (!selectedEmployeeId) {
-    alert('Please select an employee');
+  if (!selectedStatusId) {
+    toast.error('Please select an statuses');
     return;
   }
 
   setReassignLoading(true);
-  console.log('reassign product to employee:', selectedEmployeeId);
+  console.log('reassign product to status:', selectedStatusId);
   
   try {
     const response = await fetch(`http://localhost:8000/products/${product.id}`, {
@@ -58,34 +58,31 @@ const handleTransferLocation = async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name: product.name,               
-        employee_id:  parseInt(selectedEmployeeId),
-        in_warehouse : false,
-        id: product.id,        
+      body: JSON.stringify({             
+        status_id:  parseInt(selectedStatusId),    
       }),
     });
 
     if (response.ok) {
     
         setShowReassignModal(false);
-        setSelectedEmployeeId('');
+        setSelectedStatusId('');
         const updatedProduct = await fetch(`http://localhost:8000/products/${product.id}`).then(res => res.json());
         onProductUpdate(updatedProduct);
       
-      toast.success('Reassign Employee successfully!',{
-                          description : 'updated Location at ' + formattedDate
+      toast.success('Update Statues Successfully!',{
+                          description : 'updated status at ' + formattedDate
                         }); 
         
        
     } else {
       
-      toast.error('Failed to Reassign Employee');
+      toast.error('Failed to Update Status');
     }
 
   } 
   catch (err) {
-    toast.error('Error Reassign Employee: ' + err.message);
+    toast.error('Error Update Employee: ' + err.message);
   } finally {
     setReassignLoading(false);
   }
@@ -94,7 +91,7 @@ const handleTransferLocation = async () => {
 
 const openTransferModal = () => {
   setShowReassignModal(true);
-  fetchEmployees();
+  fetchStatuses();
 };
 
 
@@ -108,57 +105,58 @@ return (
             variant="outline"
             onClick={openTransferModal}
             >
-            <User className="h-4 w-4 mr-2" />
-            Reassign Employee
+                <Route className="h-4 w-4 mr-2" />
+               
+                Update Status
             </Button>
 
           
             <Dialog open={showReassignModal} onOpenChange={setShowReassignModal}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                <DialogTitle>Reassign Employee</DialogTitle>
+                <DialogTitle>Update Status</DialogTitle>
                 <DialogDescription>
-                    Select an employee for {product.name}
+                    Select a status for {product.name}
                 </DialogDescription>
                 </DialogHeader>
                 
                 <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                    <Label htmlFor="current-location">Current Employee</Label>
+                    <Label htmlFor="current-location">Current Status</Label>
                     <div className="p-3 bg-gray-100 rounded-md">
-                        {product.employee ? (
+                        {product.status ? (
                         <div className="flex items-center space-x-2">
                             <User className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium">{product.employee?.name}</span>
-                            <span className="text-sm text-gray-500">ID: {product.employee?.id}</span>
+                            <span className="font-medium">{product.status?.name}</span>
+                            <span className="text-sm text-gray-500">ID: {product.status?.id}</span>
                             </div>
                         ) : ( 
-                        <span className="text-gray-500">No employee assigned</span>
+                        <span className="text-gray-500">No status assigned</span>
                         )}
                     </div>
                 </div>
                
                 
                 <div className="space-y-2 ">
-                    <Label htmlFor="new-location">New Employee</Label>
-                    {loadingEmployees ? (
+                    <Label htmlFor="new-location">New Status</Label>
+                    {loadingStatuses? (
                     <div className="flex items-center justify-center p-3">
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Loading employees...
+                        Loading statuses...
                     </div>
                     ) : (
-                    <Select  value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                    <Select  value={selectedStatusId} onValueChange={setSelectedStatusId}>
                         <SelectTrigger>
-                        <SelectValue placeholder="Select an employee" />
+                        <SelectValue placeholder="Select a status" />
                         </SelectTrigger>
                         <SelectContent>
-                        {employees
-                            .filter(employee => employee.id !== product.employee?.id)
-                            .map((employee) => (
-                            <SelectItem key={employee.id} value={employee?.id}>
+                        {statuses
+                            .filter(status => status.id !== product.status?.id)
+                            .map((status) => (
+                            <SelectItem key={status.id} value={status?.id}>
                             <div className="flex flex-col">
-                                <span className="font-medium">{employee.name}</span>
-                                <span className="text-sm text-gray-500">ID: {employee.id}</span>
+                                <span className="font-medium">{status.name}</span>
+                                <span className="text-sm text-gray-500">ID: {status.id}</span>
                             </div>
                             </SelectItem>
                         ))}
@@ -181,7 +179,7 @@ return (
                 </Button>
                 <Button 
                     onClick={handleTransferLocation}
-                    disabled={ReassignLoading || !selectedEmployeeId}
+                    disabled={ReassignLoading || !selectedStatusId}
                 >
                     {ReassignLoading ? (
                     <>
@@ -189,7 +187,7 @@ return (
                         Reassign...
                     </>
                     ) : (
-                    'Reassign Employee'
+                    'Update Status'
                     )}
                 </Button>
                 </DialogFooter>

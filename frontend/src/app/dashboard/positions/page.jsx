@@ -41,66 +41,64 @@ import { toast } from "sonner"
 // const API_BASE_URL = 'http://127.0.0.1:8000';
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-const Locations = () => {
+const Positions = () => {
 
 const now = new Date();
 const formattedDate = now.toLocaleString(undefined, {
   dateStyle: "medium",
   timeStyle: "medium",
 }); 
-  const [locations, setLocations] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    google_map_link: '',
-    
   });
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(5); // Default page size
-  const [totalLocations, setTotalLocations] = useState(0);
+  const [totalPosition, setTotalPosition] = useState(0);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredLocations = locations.filter(location =>
-     location.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPosition = positions.filter(position =>
+     position.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
 
-  const fetchLocations = async () => {
+  const fetchPositions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/?skip=${(currentPage - 1) * pageSize}&limit=${pageSize}`);
-      if (!response.ok) throw new Error('Failed to fetch locations');
+      const response = await fetch(`${API_BASE_URL}/positions/?skip=${(currentPage - 1) * pageSize}&limit=${pageSize}`);
+      if (!response.ok) throw new Error('Failed to fetch positions');
       const data = await response.json();
-      setLocations(data);
+      setPositions(data);
 
-      const locationCount = await fetch(`${API_BASE_URL}/locations/count`);
-      const locationCountResult = await locationCount.json();
-
-      const count = locationCountResult.count;
-      setTotalLocations(count);
+      const positionCount = await fetch(`${API_BASE_URL}/positions/count`);
+      const positionCountResult = await positionCount.json();
+      
+      const count = positionCountResult.count;
+      setTotalPosition(count);
       setTotalPages(Math.ceil(count / pageSize));
-      console.log("Pages:", Math.ceil(count / pageSize));
+      
 
     } catch (err) {
-      setError('Error fetching Locations: ' + err.message);
+      setError('Error fetching Position: ' + err.message);
     } finally {
       setTimeout(() => {
         setLoading(false); 
-      }, 3);
+      }, 200);
     }
   };
 
-  // Create department
-  const createLocation = async (LocationData) => {
+  
+  const createPosition = async (LocationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/`, {
+      const response = await fetch(`${API_BASE_URL}/positions/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,26 +106,26 @@ const formattedDate = now.toLocaleString(undefined, {
         body: JSON.stringify(LocationData),
       });
        if (!response.ok){
-            toast.error('Something went wrong : ' + (await response.json()).detail)
-              
-            }
-      const newLocation = await response.json();
-      setLocations([...locations, newLocation]);
-      toast.success('location created successfully',{
+        toast.error('Something went wrong : ' + (await response.json()).detail)
+            
+        }
+      const newPosition = await response.json();
+      setPositions([...positions, newPosition]);
+      toast.success('position created successfully',{
               description : 'create at ' + formattedDate
             });
       setIsSubmitting(false);
       return true;
     } catch (err) {
-      setError('Error creating location: ' + err.message);
+      setError('Error creating position: ' + err.message);
       return false;
     }
   };
 
-  // Update department
-  const updateLocation = async (id, locationData) => {
+  
+  const updatePosition = async (id, locationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/positions/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -135,44 +133,43 @@ const formattedDate = now.toLocaleString(undefined, {
         body: JSON.stringify(locationData),
       });
       if (!response.ok){
-            toast.error('Something went wrong : ' + (await response.json()).detail)
-              
-            }
-      const updatedLocation = await response.json();
-      console.log(updateLocation)
-      setLocations(locations.map(location => 
-        location.id === id ? updatedLocation : location
+        toast.error('Something went wrong : ' + (await response.json()).detail)
+            
+        }
+      const updatedPosition = await response.json();
+      console.log(updatePosition)
+      setPositions(positions.map(position => 
+        position.id === id ? updatedPosition : position
       ));
-       toast.success('location updated successfully',{
+      
+       toast.success('position updated successfully',{
               description : 'updated at ' + formattedDate
             });
       setIsSubmitting(false);
       return true;
     } catch (err) {
-      setError('Error updating location: ' + err.message);
+      setError('Error updating position: ' + err.message);
       return false;
     }
   };
 
-  // Delete department
-  const deleteLocation = async (id) => {
-   
-    
+ 
+  const deletePosition = async (id) => {    
     try {
-      const response = await fetch(`${API_BASE_URL}/locations/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/positions/${id}`, {
         method: 'DELETE',
       });
         if (!response.ok){
             toast.error('Something went wrong : ' + (await response.json()).detail)
-              return;
+                return;
             }
-      setLocations(locations.filter(location => location.id !== id));
-      toast.success('location deleted successfully',{
+      setPositions(positions.filter(position => position.id !== id));
+      toast.success('position deleted successfully',{
               description : 'deleted at ' + formattedDate
             });
             return true;
     } catch (err) {
-      setError('Error deleting Location: ' + err.message);
+      setError('Error deleting position: ' + err.message);
       return false;
     }
   };
@@ -183,45 +180,37 @@ const formattedDate = now.toLocaleString(undefined, {
     setError('');
     setIsSubmitting(true);
 
-     // Validate Google Maps link
-    const googleMapRegex = /^https:\/\/www\.google\.com\/maps\/.+$/;
-    if (!googleMapRegex.test(formData.google_map_link)) {
-      setIsSubmitting(false);
-      toast.error("Please enter a valid Google Maps link.");
-      return;
-    }
     
     const success = editingId 
-      ? await updateLocation(editingId, formData)
-      : await createLocation(formData);
+      ? await updatePosition(editingId, formData)
+      : await createPosition(formData);
     
     if (success) {
-      setFormData({ name: '', googleMapLink: '' });
+      setFormData({ name: ''});
       setShowForm(false);
       setEditingId(null);
     }
   };
 
   // Handle edit
-  const handleEdit = (location) => {
+  const handleEdit = (position) => {
     setFormData({
-      name: location.name,
-      google_map_link: location.google_map_link  
+      name: position.name
     });
-    setEditingId(location.id);
+    setEditingId(position.id);
     setShowForm(true);
   };
 
   // Handle cancel
   const handleCancel = () => {
-    setFormData({ name: '', google_map_link:'' });
+    setFormData({ name: '' });
     setShowForm(false);
     setEditingId(null);
     setError('');
   };
 
   useEffect(() => {
-    fetchLocations();
+    fetchPositions();
   }, [pageSize,currentPage]);
 
   if (loading) {
@@ -240,15 +229,15 @@ const formattedDate = now.toLocaleString(undefined, {
                         
                           <LocationEdit className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
                           <div>
-                              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Locations</h1>
-                              <p className="text-xs sm:text-sm text-gray-600">Manage your Locations</p>
+                              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Position</h1>
+                              <p className="text-xs sm:text-sm text-gray-600">Manage your Position</p>
                           </div>
                       </div>
                       <Button className="w-full sm:w-auto" onClick={() => {
                           setShowForm(true)}}>
                             
                               <Plus className="h-4 w-4" />
-                              <span>Add Location</span>
+                              <span>Add Position</span>
                           
                       </Button>
                   </div>
@@ -271,7 +260,7 @@ const formattedDate = now.toLocaleString(undefined, {
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">
-                  {editingId ? 'Edit Location' : 'Add New Location'}
+                  {editingId ? 'Edit Position' : 'Add New Position'}
                 </h2>
                 <button
                   onClick={handleCancel}
@@ -284,7 +273,7 @@ const formattedDate = now.toLocaleString(undefined, {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location Name *
+                    position Name *
                   </label>
                   <input
                     type="text"
@@ -292,27 +281,11 @@ const formattedDate = now.toLocaleString(undefined, {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter location name"
+                    placeholder="Enter position name"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    google Map Link  *
-                  </label>
-                  <input
-                    type="text"
-                    required                    
-                    value={formData.google_map_link}
-                    onChange={(e) => setFormData({...formData, google_map_link: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter google map link"
-                  />
-                  <span className={`text-sm text-gray-500`}>Link must be valid</span>
-                </div>
-                
-               
-            
+         
                 <div className="flex gap-3 pt-4">
                   <button
                     disabled={isSubmitting}
@@ -343,9 +316,6 @@ const formattedDate = now.toLocaleString(undefined, {
         </form>
 
         
-
-
-        {/* Departments List */}
         <Card className="m-5 ">
           <CardHeader className={`grid grid-cols-2`}>
              {/* Search */}
@@ -353,7 +323,7 @@ const formattedDate = now.toLocaleString(undefined, {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search location..."
+                placeholder="Search position..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -378,10 +348,10 @@ const formattedDate = now.toLocaleString(undefined, {
           </CardHeader>
           
             <div className="bg-white ">
-              {filteredLocations.length === 0 ? (
+              {filteredPosition.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-gray-400 text-lg mb-2">No locations found</div>
-                  <p className="text-gray-500">Create your first location to get started</p>
+                  <div className="text-gray-400 text-lg mb-2">No Position found</div>
+                  <p className="text-gray-500">Create your first Position to get started</p>
                 </div>
                 ) : (
                 <CardContent>
@@ -390,35 +360,28 @@ const formattedDate = now.toLocaleString(undefined, {
                     <thead className="">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                          location name
+                          position name
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                          google map Link
-                        </th>                                                
+                                                                     
                         <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">
                           Actions
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {filteredLocations.map((location) => (
-                        <tr key={location.id} className="hover:bg-gray-50">
+                      {filteredPosition.map((position) => (
+                        <tr key={position.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900">{location.name}</div>
-                            <div className="text-sm text-gray-500">ID: {location.id}</div>
-                          </td>
-                          <td>
-                            <div>
-                                {location.google_map_link != null ? location.google_map_link.toString().substring(0,25) : location.google_map_link}
-                            </div>
-                          </td>
+                            <div className="font-medium text-gray-900">{position.name}</div>
+                            <div className="text-sm text-gray-500">ID: {position.id}</div>
+                          </td>                    
                         
                           <td className="px-6 py-4 ">
                             <div className="flex justify-center items-center gap-2">
                               <button
-                                onClick={() => handleEdit(location)}
+                                onClick={() => handleEdit(position)}
                                 className=" cursor-pointer"
-                                title="Edit location"
+                                title="Edit position"
                               >
                                 <Edit size={16} />
                               </button>
@@ -431,12 +394,12 @@ const formattedDate = now.toLocaleString(undefined, {
                                         <AlertDialogHeader>
                                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Are you sure you want to delete this location?
+                                            Are you sure you want to delete this position?
                                         </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteLocation(location.id)}>Continue</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => deletePosition(position.id)}>Continue</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
@@ -479,4 +442,4 @@ const formattedDate = now.toLocaleString(undefined, {
   );
 };
 
-export default Locations;
+export default Positions;

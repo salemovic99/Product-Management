@@ -3,12 +3,13 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
-import Header from "../components/Header";
-import DashboardSideBar from "../components/DashboardSideBar";
+
 import LayoutWrapper from "../components/LayoutWrapper";
+
+
 // Fonts (if used in classname)
 const geist = Geist({ subsets: ["latin"] });
-const geistMono = Geist_Mono({ subsets: ["latin"] });
+
 
 export const metadata = {
   title: {

@@ -21,17 +21,22 @@ import { format } from "date-fns"
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { toast } from "sonner"
 
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 export default function AddProductPage() {
 
   const now = new Date();
-const formattedDate = now.toLocaleString(undefined, {
-  dateStyle: "medium",
-  timeStyle: "medium",
-});
+  const formattedDate = now.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [employees, setEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [statuses, setStatuses] = useState([]);
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
   
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
@@ -39,7 +44,7 @@ const formattedDate = now.toLocaleString(undefined, {
   
   const [inWarehouse, setInWarehouse] = useState(true);
   const [purchasingDate, setPurchasingDate] = useState();
-  const [warrantyExpire, setWarrantyExpire] = useState();
+  const [warrantyExpire, setWarrantyExpire] = useState(new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())); // Default to 1 year from today
   
   const [formData, setFormData] = useState({
     name: "",
@@ -47,6 +52,7 @@ const formattedDate = now.toLocaleString(undefined, {
     our_serial_number: "",
     location_id: "",
     employee_id: "",
+    status_id: "",
     in_warehouse: "",
     purchasing_date: purchasingDate,
     warranty_expire: warrantyExpire,
@@ -54,14 +60,14 @@ const formattedDate = now.toLocaleString(undefined, {
 
   });
 
-  // Fetch departments on component mount
+
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/locations/?skip=0&limit=100");
+        const response = await fetch(`${API_BASE_URL}/locations/?skip=0&limit=100`);
         if (response.ok) {
           const data = await response.json();
-          console.log("Fetched locations:", data);
+          
           setLocations(data);
         } else {
           console.error("Failed to fetch locations");
@@ -76,14 +82,14 @@ const formattedDate = now.toLocaleString(undefined, {
     fetchLocations();
   }, []);
 
-  // Fetch departments on component mount
+ 
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/employees");
+        const response = await fetch(`${API_BASE_URL}/employees`);
         if (response.ok) {
           const data = await response.json();
-          console.log("Fetched employees:", data);
+          
           setEmployees(data);
         } else {
           console.error("Failed to fetch employees");
@@ -98,7 +104,32 @@ const formattedDate = now.toLocaleString(undefined, {
     fetchEmployees();
     setTimeout(() => {
       setLoading(false)
-    }, 2);
+    }, 200);
+  }, []);
+
+
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/statuses`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          setStatuses(data);
+        } else {
+          console.error("Failed to fetch statuses");
+        }
+      } catch (err) {
+        console.error("Error fetching statuses:", err);
+      } finally {
+        setLoadingStatuses(false);
+      }
+    };
+
+    fetchStatuses();
+    setTimeout(() => {
+      setLoading(false)
+    }, 200);
   }, []);
 
   const handleInputChange = (e) => {
@@ -122,7 +153,7 @@ const formattedDate = now.toLocaleString(undefined, {
     if (!inWarehouse && !formData.employee_id) return "Employee is required when not in warehouse";
     if (inWarehouse && formData.employee_id) return "Employee should not be selected when in warehouse";
     if (warrantyExpire && isNaN(warrantyExpire.getTime())) return "Invalid warranty expire date";
-    if (warrantyExpire  > purchasingDate) {
+    if (warrantyExpire  < purchasingDate) {
       return "Warranty expire date cannot be before purchasing date";
     }
     if (!formData.note || formData.note.length < 10) {
@@ -164,10 +195,11 @@ const formattedDate = now.toLocaleString(undefined, {
     purchasing_date: purchasingDate ? purchasingDate.toISOString().split("T")[0] : null,
     warranty_expire: warrantyExpire ? warrantyExpire.toISOString().split("T")[0] : null,
     note: formData.note || null,
+    status_id: formData.status_id ? formData.status_id  : 1
   };
 
     try {
-      const response = await fetch("http://localhost:8000/products/", {
+      const response = await fetch(`${API_BASE_URL}/products/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,8 +208,9 @@ const formattedDate = now.toLocaleString(undefined, {
       });
 
       if (!response.ok){
-          toast.error('Something went wrong : ' + (await response.json()).detail)                    
-          }
+        toast.error('Something went wrong : ' + (await response.json()).detail)  ;
+        return;               
+        }
 
       setSuccess(true);
       toast.success('Product created successfully',{
@@ -190,14 +223,15 @@ const formattedDate = now.toLocaleString(undefined, {
           our_serial_number: "",
           location_id: "",
           employee_id: "",
+          status_id: "",
           in_warehouse: "",
           purchasing_date: null,
-          warranty_expire: null,
+          warranty_expire: warrantyExpire,
           note: ""
       });
       
-      // Reset success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+      //return to the previous page after successful update
+      goBack()
 
     } catch (err) {
       setError(err.message || "Something went wrong");
@@ -211,12 +245,15 @@ const formattedDate = now.toLocaleString(undefined, {
   };
 
   const resetForm = () => {
+    setWarrantyExpire(new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())); // Reset to 1 year from today
     setFormData({
         name: "",
         serial_number: "",
         our_serial_number: "",
+        warranty_expire:warrantyExpire,
         location_id: "",
         employee_id: "",
+        status_id: "",
         in_warehouse: true,
         note: "",
     });
@@ -227,13 +264,10 @@ const formattedDate = now.toLocaleString(undefined, {
   };
 
   const GenerateRandomSerialNumber = (length) => {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789';
-    let serialNumber = '';
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * alphabet.length);
-      serialNumber += alphabet[randomIndex];
-    }
-
+   
+    const id = crypto.randomUUID();
+    let serialNumber = id.slice(0, length); 
+   
     document.getElementById('ourSerialNumber').value = serialNumber;
     formData.our_serial_number = serialNumber;
     setFormData(prev => ({
@@ -245,7 +279,7 @@ const formattedDate = now.toLocaleString(undefined, {
   if(loading)
   {
     return(
-              <div className="min-h-screen bg-gray-50 py-8 px-4">
+            <div className="min-h-screen bg-gray-50 py-8 px-4">
             <div className="max-w-xl mx-auto space-y-6">
               {/* Header Skeleton */}
               <Skeleton className="h-6 w-24" />
@@ -298,7 +332,7 @@ const formattedDate = now.toLocaleString(undefined, {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-xl mx-auto">
         <div className="flex items-center gap-4 mb-4">
-            <Button variant="outline" size="sm" onClick={goBack}>
+            <Button variant="outline" size="sm" onClick={goBack} className={"cursor-pointer"}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
@@ -378,7 +412,7 @@ const formattedDate = now.toLocaleString(undefined, {
                 <Button
                   variant="outline"
                   className="mt-2 cursor-pointer"
-                  onClick={() => GenerateRandomSerialNumber(15)}
+                  onClick={() => GenerateRandomSerialNumber(23)}
                 >
                   <Shuffle className="ml-2 w-4 h-4" />
                   Generate Random Serial Number
@@ -387,7 +421,7 @@ const formattedDate = now.toLocaleString(undefined, {
               </div>
 
                
-              <div className={'grid grid-cols-2'}>
+              <div className={'grid grid-cols-1 space-y-5 md:grid-cols-2 md:space-y-0'}>
                 <div className="flex flex-col space-y-2">
                   <Label htmlFor="date-picker-one" >
                     Purchasing Date *
@@ -465,8 +499,9 @@ const formattedDate = now.toLocaleString(undefined, {
                 </div>
               </div>
               
-              <div className={'grid grid-cols-2 gap-3'}>
-                {/* location Dropdown */}
+              <div className={'grid grid-cols-1 space-y-4   md:grid-cols-3 md:space-y-0 gap-3'}>
+
+              {/* location Dropdown */}
               <div className="space-y-2">
                 <Label htmlFor="department">Location name *</Label>
                 {loadingLocations ? (
@@ -489,6 +524,36 @@ const formattedDate = now.toLocaleString(undefined, {
                           value={location.id.toString()}
                         >
                           {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* statuses Dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="department">status  *</Label>
+                {loadingStatuses ? (
+                  <div className="flex items-center space-x-2 p-3 border rounded-md">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-500">Loading statuses...</span>
+                  </div>
+                ) : (
+                  <Select 
+                    value={formData.status_id} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem 
+                          key={status.id} 
+                          value={status.id.toString()}
+                        >
+                          {status.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -539,6 +604,7 @@ const formattedDate = now.toLocaleString(undefined, {
                   placeholder="Enter product note"
                   rows={4}
                 />
+                <span className={`text-sm text-gray-500`}>Note must be at least 10 characters</span>
               </div>
 
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List
@@ -9,6 +9,8 @@ from database import SessionLocal, engine, get_db
 import os
 from qr import QR_CODES_DIR
 from fastapi.middleware.cors import CORSMiddleware
+import shutil
+from seed_data import seed_statuses
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -31,8 +33,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+UPLOAD_DIR = "uploaded_files"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # Mount static files to serve QR code images
 app.mount("/qr_codes", StaticFiles(directory="qr_codes"), name="qr_codes")
+
+# Mount the 'uploaded_files' folder at the /uploaded_files URL
+app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uploaded_files")
+
+
+@app.on_event("startup")
+def startup_event():
+    seed_statuses()
+
+@app.get("/statuses/", response_model=List[schemas.Status])
+def get_statuses(db: Session = Depends(get_db)):
+    statuses = crud.get_statuses(db)
+    return statuses
+
+#uploaded files
+@app.post("/products/{product_id}/upload")
+async def upload_product_file(
+    product_id: int,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db)
+):
+    # Ensure the product exists
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Create folder for product files
+    folder = os.path.join("uploaded_files", f"product_{product_id}")
+    os.makedirs(folder, exist_ok=True)
+
+    saved_files = []
+
+    for file in files:
+        file_path = os.path.join(folder, file.filename)
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        db_file = models.ProductFile(product_id=product_id, file_path=file_path)
+        db.add(db_file)
+        saved_files.append(db_file)
+
+    db.commit()
+
+    return {"message": "Files uploaded", "files": [f.file_path for f in saved_files]}
+
+@app.get("/products/{product_id}/files", response_model=List[schemas.ProductFile])
+def get_product_files(product_id: int, db: Session = Depends(get_db)):
+    files = crud.get_product_files(product_id, db);
+    return files
 
 # Location endpoints
 @app.post("/locations/", response_model=schemas.Location)
@@ -109,7 +163,7 @@ def update_employee(unique_system_id: int, employee: schemas.EmployeeUpdate, db:
         raise HTTPException(status_code=404, detail="Employee not found")
     return db_employee
 
-@app.delete("/employees/{unique_system_id}", response_model=schemas.Employee)
+@app.delete("/employees/{unique_system_id}", response_model=dict)
 def delete_employee(unique_system_id: int, db: Session = Depends(get_db)):
     db_employee = crud.delete_employee(db, unique_system_id=unique_system_id)
     if db_employee is None:
@@ -219,6 +273,50 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     if db_product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return db_product
+
+# Position endpoints
+@app.post("/positions/", response_model=schemas.Position)
+def create_position(position: schemas.PositionCreate, db: Session = Depends(get_db)):
+    return crud.create_position(db=db, position=position)
+
+@app.get("/positions/count", response_model=dict)
+def get_positions_count(db: Session = Depends(get_db)):
+    count = db.query(models.Position).count()
+    return {"count": count}
+
+@app.get("/positions/", response_model=List[schemas.Position])
+def read_positions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    positions = crud.get_positions(db, skip=skip, limit=limit)
+    return positions
+
+@app.get("/positions/{position_id}", response_model=schemas.Position)
+def read_position(position_id: int, db: Session = Depends(get_db)):
+    db_position = crud.get_position(db, position_id=position_id)
+    if db_position is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return db_position
+
+@app.put("/positions/{position_id}", response_model=schemas.Position)
+def update_position(position_id: int, position: schemas.PositionUpdate, db: Session = Depends(get_db)):
+    db_position = crud.update_position(db, position_id=position_id, position=position)
+    if db_position is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return db_position
+
+@app.delete("/positions/{position_id}", response_model=dict)
+def delete_position(position_id: int, db: Session = Depends(get_db)):
+    db_position = crud.delete_position(db, position_id=position_id)
+    if db_position is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return db_position
+
+#end point for product history
+@app.get("/products/{product_id}/history", response_model=List[schemas.ProductHistory])
+def get_product_history(product_id: int, db: Session = Depends(get_db)):
+    history = crud.get_product_history(db, product_id=product_id)
+    if history is None:
+        raise HTTPException(status_code=404, detail="Product history not found")
+    return history
 
 
 

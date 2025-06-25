@@ -24,6 +24,7 @@ RUN useradd --no-create-home appuser
 # Create data directory and set correct permissions
 RUN mkdir -p /app/data && chown -R appuser:appuser /app
 RUN mkdir -p /app/qrcodes && chown -R appuser:appuser /app/qrcodes
+RUN mkdir -p /app/uploaded_files && chown -R appuser:appuser /app/uploaded_files
 
 
 USER appuser
