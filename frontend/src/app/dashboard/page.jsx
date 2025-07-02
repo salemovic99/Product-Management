@@ -9,9 +9,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
-
-// const API_BASE_URL = "http://127.0.0.1:8000";
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+import productsService from "@/services/productService";
+import employeesService from "@/services/employeeService";
+import locationsService from "@/services/locationService";
+import { toast } from "sonner";
 
 const Dashboard = () => {
 
@@ -24,33 +25,27 @@ const Dashboard = () => {
   const [locationsCount, setLocationsCount] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchCounts = async () => {
     
-    const fetchCounts = async () => {
+    try {
+      const productsCount = await productsService.getProductsCount();
+      const employeesCount= await employeesService.getEmployeeCount();
+      const locationsCount = await locationsService.getLocationCount();
+
+    
+      setProductsCount(productsCount);
+      setEmployeesCount(employeesCount);
+      setLocationsCount(locationsCount);
       
-      try {
-        const [productsRes, employeesRes, locationsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/products/count`),
-          fetch(`${API_BASE_URL}/employees/count`),
-          fetch(`${API_BASE_URL}/locations/count`)
-        ]);
+    } catch (error) {
+      toast.error('error fetching counts! :', {
+        description:error.message
+      })
+    }
+  };
 
-        const [productsData, employeesData, locationsData] = await Promise.all([
-          productsRes.json(),
-          employeesRes.json(),
-          locationsRes.json()
-        ]);
 
-        setProductsCount(productsData.count);
-        setEmployeesCount(employeesData.count);
-        setLocationsCount(locationsData.count);
-        console.log( "api url : " + API_BASE_URL)
-        console.log( "api url env : " + process.env.NEXT_PUBLIC_BACKEND_URL)
-      } catch (error) {
-        console.error("Error fetching counts:", error);
-      }
-    };
-
+  useEffect(() => {
     fetchCounts();
     setTimeout(() => {
       setLoading(false)
