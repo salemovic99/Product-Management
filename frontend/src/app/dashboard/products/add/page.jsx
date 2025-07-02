@@ -20,9 +20,27 @@ import {
 import { format } from "date-fns"
 import { Skeleton } from '../../../../components/ui/skeleton';
 import { toast } from "sonner"
+import locationsService from '@/services/locationService';
+import employeesService from '@/services/employeeService';
+import statusesService from '@/services/statusService';
+import productsService from '@/services/productService';
+import { z } from "zod";
 
+const productSchema = z.object({
+  name: z.coerce.string().regex(/[A-Za-z]/, { message: "Name must contain at least one letter",  }).min(3, { message: "Product name is required" }),
+  serial_number: z.string().min(8, { message: "Serial number is required" }).max(20, {message :"Serial number must not exceed 20 characters"}),
+  our_serial_number: z.string().min(15, { message: "Our serial is required" }),
+  location_id: z.coerce.number().min(1, { message: "Location is required" }),
+  status_id: z.coerce.number().min(1, { message: "Status is required" }),
+  in_warehouse: z.boolean(),
+  note: z.string().regex(/^[A-Za-z\s]+$/, { message: "Name must contain only letters and spaces",}).min(10, { message: "Note is required" }),
+  purchasing_date: z.coerce.date({
+    required_error: "Purchasing date is required",
+    invalid_type_error: "Invalid date"
+  }),
+  warranty_expire: z.date().optional(),
+});
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export default function AddProductPage() {
 
@@ -41,7 +59,8 @@ export default function AddProductPage() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  
+  const [errors, setErrors] = useState({});//for validation
+
   const [inWarehouse, setInWarehouse] = useState(true);
   const [purchasingDate, setPurchasingDate] = useState();
   const [warrantyExpire, setWarrantyExpire] = useState(new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())); // Default to 1 year from today
@@ -53,132 +72,117 @@ export default function AddProductPage() {
     location_id: "",
     employee_id: "",
     status_id: "",
-    in_warehouse: "",
+    in_warehouse: true,
     purchasing_date: purchasingDate,
     warranty_expire: warrantyExpire,
-    note: "",
-
+    note: ""
   });
 
+  const fetchLocations = async () => {
+    try {
+      const data = await locationsService.getAllLocations()
 
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/locations/?skip=0&limit=100`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          setLocations(data);
-        } else {
-          console.error("Failed to fetch locations");
-        }
-      } catch (err) {
-        console.error("Error fetching locations:", err);
-      } finally {
-        setLoadingLocations(false);
-      }
-    };
+      if (!data) {
+        console.error("Failed to fetch locations");
+        return;
+      }   
+      setLocations(data);
+    } catch (err) {
+      console.error("Error fetching locations:", err);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
 
-    fetchLocations();
-  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const data = await employeesService.getAllEmployees();
+
+      if (!data) {
+        console.error("Failed to fetch employees");
+      } 
+      setEmployees(data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+ 
+  const fetchStatuses = async () => {
+    try {
+      const data = await statusesService.getAllStatuses();
+
+      if (!data) {
+        console.error("Failed to fetch statuses");
+      } 
+      setStatuses(data);
+    } catch (err) {
+      console.error("Error fetching statuses:", err);
+    } finally {
+      setLoadingStatuses(false);
+    }
+  };
 
  
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/employees`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          setEmployees(data);
-        } else {
-          console.error("Failed to fetch employees");
-        }
-      } catch (err) {
-        console.error("Error fetching employees:", err);
-      } finally {
-        setLoadingEmployees(false);
-      }
-    };
-
+    fetchLocations();
     fetchEmployees();
-    setTimeout(() => {
-      setLoading(false)
-    }, 200);
-  }, []);
-
-
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/statuses`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          setStatuses(data);
-        } else {
-          console.error("Failed to fetch statuses");
-        }
-      } catch (err) {
-        console.error("Error fetching statuses:", err);
-      } finally {
-        setLoadingStatuses(false);
-      }
-    };
-
     fetchStatuses();
     setTimeout(() => {
-      setLoading(false)
+    setLoading(false)
     }, 200);
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+   const validateField = (field, value) => {
+    const partialSchema = z.object({ [field]: productSchema.shape[field] });
+
+    const result = partialSchema.safeParse({ [field]: value });
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: result.success ? null : result.error.issues[0].message,
+    }));
+  };
+
+  const handleInputChange = (name, value) => {
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    if(name === `employee_id`) return ;
+
+    validateField(name, value);
   };
 
- 
-
-  const validateForm = () => {
-
-    if (!formData.name.trim()) return "Product name is required";
-    if (!formData.serial_number.trim()) return "serial number is required";
-    if (!formData.our_serial_number.trim()) return "our serial number is required";
-    if (!purchasingDate || isNaN(purchasingDate.getTime())) return "Invalid purchasing date";
-    if (!formData.location_id.trim()) return "location is required";
-    if (!formData.note.trim()) return "note is required";
-    if (!inWarehouse && !formData.employee_id) return "Employee is required when not in warehouse";
-    if (inWarehouse && formData.employee_id) return "Employee should not be selected when in warehouse";
-    if (warrantyExpire && isNaN(warrantyExpire.getTime())) return "Invalid warranty expire date";
-    if (warrantyExpire  < purchasingDate) {
-      return "Warranty expire date cannot be before purchasing date";
-    }
-    if (!formData.note || formData.note.length < 10) {
-      return "Note cannot be less than 10 characters";
-    }
-    if (formData.serial_number.length < 15) {
-      return "serial number cannot be less than 15 characters";
-    }
-    if (formData.our_serial_number.length < 15) {
-      return "our serial cannot be less than 15 characters";
-    }
-    if (formData.name.length < 4) {
-      return "Product name cannot be less than 4 characters";
-    }
- 
-    return null;
-  };
-
+  
   const handleSubmit = async () => {
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      toast.error(validationError);
+    if (!inWarehouse && !formData.employee_id) {
+      toast.error("Employee is required when you choose not in warehouse")
       return;
+    }
+
+    const validated = productSchema.safeParse({
+      ...formData,
+      in_warehouse: inWarehouse,
+      purchasing_date: purchasingDate,
+      warranty_expire: warrantyExpire,
+    });
+
+    if (!validated.success) {
+      const fieldErrors = {};
+      validated.error.errors.forEach(({ path, message }) => {
+        fieldErrors[path[0]] = message;
+      });
+      setErrors(fieldErrors);
+      return;
+    } else {
+      setErrors({});
     }
 
     setLoading(true);
@@ -186,29 +190,24 @@ export default function AddProductPage() {
     setSuccess(false);
 
     const data = {
-    name: formData.name,
-    serial_number: formData.serial_number,
-    our_serial_number: formData.our_serial_number,
-    location_id: parseInt(formData.location_id), // ensure int
-    employee_id: inWarehouse ? null : formData.employee_id ? parseInt(formData.employee_id) : null,
-    in_warehouse: inWarehouse,
-    purchasing_date: purchasingDate ? purchasingDate.toISOString().split("T")[0] : null,
-    warranty_expire: warrantyExpire ? warrantyExpire.toISOString().split("T")[0] : null,
-    note: formData.note || null,
-    status_id: formData.status_id ? formData.status_id  : 1
-  };
+      name: formData.name,
+      serial_number: formData.serial_number,
+      our_serial_number: formData.our_serial_number,
+      location_id: parseInt(formData.location_id), 
+      employee_id: inWarehouse ? null : formData.employee_id ? parseInt(formData.employee_id) : null,
+      in_warehouse: inWarehouse,
+      purchasing_date: purchasingDate ? purchasingDate.toISOString().split("T")[0] : null,
+      warranty_expire: warrantyExpire ? warrantyExpire.toISOString().split("T")[0] : null,
+      note: formData.note || null,
+      status_id: formData.status_id ? formData.status_id  : 1
+    };
+
 
     try {
-      const response = await fetch(`${API_BASE_URL}/products/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await productsService.createProduct(data);
 
-      if (!response.ok){
-        toast.error('Something went wrong : ' + (await response.json()).detail)  ;
+      if (!response){
+        toast.error('Something went wrong ')  ;
         return;               
         }
 
@@ -216,25 +215,17 @@ export default function AddProductPage() {
       toast.success('Product created successfully',{
                     description : 'create at ' + formattedDate
                   });
-      // Reset form
-      setFormData({
-          name: "",
-          serial_number: "",
-          our_serial_number: "",
-          location_id: "",
-          employee_id: "",
-          status_id: "",
-          in_warehouse: "",
-          purchasing_date: null,
-          warranty_expire: warrantyExpire,
-          note: ""
-      });
-      
-      //return to the previous page after successful update
+    
+      resetForm();
+    
       goBack()
 
     } catch (err) {
       setError(err.message || "Something went wrong");
+      toast.error('Failed to create product', {
+      description: err.message || 'Unexpected error occurred',
+      duration: 5000,
+    });
     } finally {
       setLoading(false);
     }
@@ -258,7 +249,6 @@ export default function AddProductPage() {
         note: "",
     });
     setPurchasingDate(null),
-    setWarrantyExpire(null);
     setError("");
     setSuccess(false);
   };
@@ -274,7 +264,9 @@ export default function AddProductPage() {
       ...prev,
       our_serial_number: serialNumber
     }));
+    validateField('our_serial_number', serialNumber)
   }
+
 
   if(loading)
   {
@@ -382,9 +374,10 @@ export default function AddProductPage() {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('name', e.target.value)}}
                   placeholder="Enter product name"
                 />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
               {/* Product serial number */}
@@ -394,9 +387,10 @@ export default function AddProductPage() {
                   id="serialNumber"
                   name="serial_number"
                   value={formData.serial_number}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('serial_number', e.target.value)}}
                   placeholder="Enter product serial number"
                 />
+                {errors.serial_number && <p className="text-red-500 text-sm mt-1">{errors.serial_number}</p>}
               </div>
 
               {/* Product our serial number */}
@@ -406,9 +400,10 @@ export default function AddProductPage() {
                   id="ourSerialNumber"
                   name="our_serial_number"
                   value={formData.our_serial_number}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('our_serial_number', e.target.value)}}
                   placeholder="Enter product our serial number"
                 />
+                {errors.our_serial_number && <p className="text-red-500 text-sm mt-1">{errors.our_serial_number}</p>}
                 <Button
                   variant="outline"
                   className="mt-2 cursor-pointer"
@@ -449,6 +444,7 @@ export default function AddProductPage() {
                       />
                     </PopoverContent>
                   </Popover>
+                  {errors.purchasingDate && <p className="text-red-500 text-sm mt-1">{errors.purchasingDate}</p>}
                 </div>
 
 
@@ -512,7 +508,7 @@ export default function AddProductPage() {
                 ) : (
                   <Select 
                     value={formData.location_id} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, location_id: value }))}
+                    onValueChange={(value) => {handleInputChange('location_id', value)}}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location" />
@@ -529,6 +525,7 @@ export default function AddProductPage() {
                     </SelectContent>
                   </Select>
                 )}
+                {errors.location_id && <p className="text-red-500 text-sm mt-1">{errors.location_id}</p>}
               </div>
 
               {/* statuses Dropdown */}
@@ -542,7 +539,7 @@ export default function AddProductPage() {
                 ) : (
                   <Select 
                     value={formData.status_id} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, status_id: value }))}
+                    onValueChange={(value) => {handleInputChange('status_id', value)}}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a status" />
@@ -559,6 +556,7 @@ export default function AddProductPage() {
                     </SelectContent>
                   </Select>
                 )}
+                {errors.status_id && <p className="text-red-500 text-sm mt-1">{errors.status_id}</p>}
               </div>
 
               {/* employee Dropdown */}
@@ -573,7 +571,7 @@ export default function AddProductPage() {
                   <Select 
                   disabled={inWarehouse}
                     value={formData.employee_id} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
+                    onValueChange={(value) => {handleInputChange('employee_id', value)}}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select an employee" />
@@ -590,6 +588,7 @@ export default function AddProductPage() {
                     </SelectContent>
                   </Select>
                 )}
+                
               </div>
               </div>
 
@@ -600,11 +599,11 @@ export default function AddProductPage() {
                   id="note"
                   name="note"
                   value={formData.note}
-                  onChange={handleInputChange}
+                  onChange={(e) =>{handleInputChange('note', e.target.value)}}
                   placeholder="Enter product note"
                   rows={4}
                 />
-                <span className={`text-sm text-gray-500`}>Note must be at least 10 characters</span>
+                {errors.note && <p className="text-red-500 text-sm mt-1">{errors.note}</p>}
               </div>
 
 
