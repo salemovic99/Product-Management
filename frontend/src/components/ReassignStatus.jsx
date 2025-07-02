@@ -171,7 +171,7 @@ return (
                     variant="outline" 
                     onClick={() => {
                     setShowReassignModal(false);
-                    setSelectedEmployeeId('');
+                    setSelectedStatusId('');
                     }}
                     disabled={ReassignLoading}
                 >

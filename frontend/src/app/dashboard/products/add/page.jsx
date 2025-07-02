@@ -190,7 +190,7 @@ export default function AddProductPage() {
     serial_number: formData.serial_number,
     our_serial_number: formData.our_serial_number,
     location_id: parseInt(formData.location_id), // ensure int
-    employee_id: inWarehouse ? 0 : formData.employee_id ? parseInt(formData.employee_id) : null,
+    employee_id: inWarehouse ? null : formData.employee_id ? parseInt(formData.employee_id) : null,
     in_warehouse: inWarehouse,
     purchasing_date: purchasingDate ? purchasingDate.toISOString().split("T")[0] : null,
     warranty_expire: warrantyExpire ? warrantyExpire.toISOString().split("T")[0] : null,

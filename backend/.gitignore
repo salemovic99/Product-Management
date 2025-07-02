@@ -24,3 +24,4 @@ build/
 
 # QR code output directory (if generated)
 qr_codes/
+uploaded_files
