@@ -20,20 +20,6 @@ export default function TableLoadingSkeleton(){
                 </div>
               </div>
         
-              {/* Stats */}
-              <div className="m-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <Skeleton className="w-10 h-5" />
-                        <Skeleton className="w-12 h-5" />
-                      </div>
-                      <Skeleton className="w-8 h-8 rounded-full" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
         
               {/* Search and Table */}
               <Card className="m-5">
