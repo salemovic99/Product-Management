@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../../components/ui/card';
-import { Badge } from '../../../../../components/ui/badge';
-import { Button } from '../../../../../components/ui/button';
-import { Separator } from '../../../../../components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { 
   Laptop, 
   MapPin, 
@@ -28,22 +28,23 @@ import {
 } from 'lucide-react';
 import { redirect, useParams } from "next/navigation";
 import { useEffect } from 'react';
-import { Skeleton } from '../../../../../components/ui/skeleton';
-import TransferLocation from '../../../../../components/TransferLocation';
-import ReassignEmployee from '../../../../../components/ReassignEmployee';
-import DownloadPDFButton from '../../../../../components/DownloadPDFButton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../../components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import TransferLocation from '@/components/TransferLocation';
+import ReassignEmployee from '@/components/ReassignEmployee';
+import DownloadPDFButton from '@/components/DownloadPDFButton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import ProductHistory from '../../../../../components/ProductHistory';
-import AttachmentTab from '../../../../../components/AttachmentTab';
-import ReassignStatus from '../../../../../components/ReassignStatus';
+import ProductHistory from '@/components/ProductHistory';
+import AttachmentTab from '@/components/AttachmentTab';
+import ReassignStatus from '@/components/ReassignStatus';
+import productsService from '@/services/productService';
 
 export default function DetailsPage() {
 
     const params = useParams();
     const productId = params?.productid ? parseInt(params.productid ) : null;
 
-    const[product, setproduct] = useState({
+    const[product, setProduct] = useState({
                 name: "",
                 serial_number: "",
                 our_serial_number: "",
@@ -76,55 +77,58 @@ export default function DetailsPage() {
     
     const fetchProduct = async () => {
         try {
-          const response = await fetch(`http://localhost:8000/products/${productId}`);
-          if (response.ok) {
-            const product = await response.json();
-          
-            setproduct({
-                name: product.name,
-                serial_number: product.serial_number,
-                our_serial_number: product.our_serial_number,
-                location_id: product.location_id,
-                employee_id: product.employee_id ? product.employee_id.toString() : "",
-                in_warehouse: product.in_warehouse,
-                purchasing_date: product.purchasing_date,
-                warranty_expire: product.warranty_expire,
-                note: product.note,
-                dynamic_qr_code: product.dynamic_qr_code,
-                id: product.id,
 
-                location: product.location ? {
-                name: product.location.name,
-                google_map_link: product.location.google_map_link,
-                id: product.location.id
-                } : null,
-                employee: product.employee ?
-                {
-                  name: product.employee.name,
-                  employee_id: product.employee.employee_id,
-                  phone_number: product.employee.phone_number,
-                  id: product.employee.id
-                } : null,
+          const result = await productsService.getProductById(productId);
 
-                status:product.status ? {
-                    id: product.status.id,
-                    name: product.status.name
-                  } : null
-            });
-          } else {
+          if (!result) {
             setError("Failed to load product data");
-          }
+            return;
+          } 
+
+          const product = result;
+        
+          setProduct({
+              name: product.name,
+              serial_number: product.serial_number,
+              our_serial_number: product.our_serial_number,
+              location_id: product.location_id,
+              employee_id: product.employee_id ? product.employee_id.toString() : "",
+              in_warehouse: product.in_warehouse,
+              purchasing_date: product.purchasing_date,
+              warranty_expire: product.warranty_expire,
+              note: product.note,
+              dynamic_qr_code: product.dynamic_qr_code,
+              id: product.id,
+
+              location: product.location ? {
+              name: product.location.name,
+              google_map_link: product.location.google_map_link,
+              id: product.location.id
+              } : null,
+
+              employee: product.employee ? {
+                name: product.employee.name,
+                employee_id: product.employee.employee_id,
+                phone_number: product.employee.phone_number,
+                id: product.employee.id
+              } : null,
+
+              status:product.status ? {
+                  id: product.status.id,
+                  name: product.status.name
+                } : null
+          });
+
         } catch (err) {
           setError("Error loading product: " + err.message);
         } finally {
           setLoadingProduct(false);
           setTimeout(() => {
             setLoading(false)
-          }, 2);
+          }, 200);
         }
       };
 
-      // Attachment handlers
     const handleDragOver = (e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -150,7 +154,7 @@ export default function DetailsPage() {
     const handleFiles = (files) => {
         const validFiles = files.filter(file => {
             const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf';
-            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+            const isValidSize = file.size <= 10 * 1024 * 1024; 
             return isValidType && isValidSize;
         });
 
@@ -163,7 +167,8 @@ export default function DetailsPage() {
         preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
     }));
 
-        setAttachments(prev => [...prev, ...newAttachments]);
+    setAttachments(prev => [...prev, ...newAttachments]);
+
     };
 
     const removeAttachment = (id) => {
@@ -189,16 +194,13 @@ export default function DetailsPage() {
         if (type === 'application/pdf') return FileText;
     }
     
-      // Fetch product data 
+
       useEffect(() => {
     
         if (productId) {
           fetchProduct();
         }
       }, [productId]);
-
-
- 
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -215,105 +217,105 @@ export default function DetailsPage() {
    
     printWindow.document.write(`
         <!DOCTYPE html>
-<html>
-<head>
-    <title>QR Code Print - 4" x 6"</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .page {
-            width: 6in;
-            height: 4in;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            background: white;
-        }
-        
-        .qr-container {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            width: 100%;
-            padding-left: 1.25in; /* Center the 3.5" QR code on 6" paper: (6-3.5)/2 = 1.25" */
-        }
-        
-        .qr-image {
-            /* Maximum size while maintaining aspect ratio and leaving some margin */
-            width: 2.5in;
-            height: 2.5in;
-            object-fit: contain;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-            image-rendering: pixelated;
-            /* Ensure crisp rendering for QR codes */
-        }
-        
-        @media print {
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            
-            .page {
-                margin: 0;
-                padding: 5px;
-                page-break-after: always;
-                box-shadow: none;
-                border: none;
-            }
-            
-            .qr-image {
-                /* Ensure maximum quality for printing */
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
-                image-rendering: pixelated;
-            }
-            
-            /* Hide everything except the page content when printing */
-            @page {
-                size: 6in 4in;
-                margin: 0;
-            }
-        }
-        
-        /* Optional: Show page boundaries in browser for preview */
-        @media screen {
-            body {
-                background: #f0f0f0;
-                padding: 20px;
-            }
-            
-            .page {
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                border: 1px solid #ddd;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="page">
-        <div class="qr-container">
-            <img src="http://localhost:8000/${product.dynamic_qr_code}" alt="QR Code" class="qr-image" />
-        </div>
-    </div>
-</body>
-</html>
-`);
+        <html>
+        <head>
+            <title>QR Code Print - 4" x 6"</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    background: white;
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                }
+                
+                .page {
+                    width: 6in;
+                    height: 4in;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                    background: white;
+                }
+                
+                .qr-container {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    width: 100%;
+                    padding-left: 1.25in; /* Center the 3.5" QR code on 6" paper: (6-3.5)/2 = 1.25" */
+                }
+                
+                .qr-image {
+                    /* Maximum size while maintaining aspect ratio and leaving some margin */
+                    width: 2.5in;
+                    height: 2.5in;
+                    object-fit: contain;
+                    image-rendering: -webkit-optimize-contrast;
+                    image-rendering: crisp-edges;
+                    image-rendering: pixelated;
+                    /* Ensure crisp rendering for QR codes */
+                }
+                
+                @media print {
+                    body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    
+                    .page {
+                        margin: 0;
+                        padding: 5px;
+                        page-break-after: always;
+                        box-shadow: none;
+                        border: none;
+                    }
+                    
+                    .qr-image {
+                        /* Ensure maximum quality for printing */
+                        image-rendering: -webkit-optimize-contrast;
+                        image-rendering: crisp-edges;
+                        image-rendering: pixelated;
+                    }
+                    
+                    /* Hide everything except the page content when printing */
+                    @page {
+                        size: 6in 4in;
+                        margin: 0;
+                    }
+                }
+                
+                /* Optional: Show page boundaries in browser for preview */
+                @media screen {
+                    body {
+                        background: #f0f0f0;
+                        padding: 20px;
+                    }
+                    
+                    .page {
+                        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        border: 1px solid #ddd;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="page">
+                <div class="qr-container">
+                    <img src="http://localhost:8000/${product.dynamic_qr_code}" alt="QR Code" class="qr-image" />
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
 
     printWindow.document.close();
    
@@ -367,8 +369,7 @@ const handleUpload = async () => {
           description : error
         });
   }
-
-  
+ 
 };
 
  const getStatusColor = (status) => {
@@ -531,9 +532,11 @@ const handleUpload = async () => {
           </TabsList>
           <TabsContent value="info">
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
           {/* Main Information */}
           <div className="lg:col-span-2 space-y-6">
+
             {/* Device Information */}
             <Card className="shadow-sm border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader className="pb-4">
@@ -601,7 +604,7 @@ const handleUpload = async () => {
                   </div>
 
                  <div >
-                  <DownloadPDFButton data={product}  onProductUpdate={setproduct} />
+                  <DownloadPDFButton data={product}  onProductUpdate={setProduct} />
                  </div>
                 </CardTitle>
 
@@ -612,7 +615,7 @@ const handleUpload = async () => {
                   <div className="space-y-3">
                     <h4 className="font-semibold text-slate-900">Assigned Employee</h4>
 
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                    <div className="bg-slate-100  border-slate-200 rounded-lg p-4 ">
 
                       {product.employee != null ?
                       
@@ -652,7 +655,7 @@ const handleUpload = async () => {
                  <div className="space-y-3">
                     <h4 className="font-semibold text-slate-900">Location</h4>
                     
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                    <div className="bg-slate-100  border-slate-200 rounded-lg p-4 ">
                       <div className="flex items-start space-x-3">
                         <div className="bg-blue-100 p-2 rounded-lg">
                           <MapPin className="h-5 w-5 text-blue-600" />
@@ -736,8 +739,7 @@ const handleUpload = async () => {
                       <Upload className="h-4 w-4 mr-2" />
                       Choose Files
                     </Button>
-
-                    
+     
                   </div>
                 </div>
 
@@ -799,13 +801,9 @@ const handleUpload = async () => {
                 )}
               </CardContent>
             </Card>
-         
-
-            
+              
           </div>
 
-
-          
 
           {/* Sidebar */}
           <div className="space-y-6">
@@ -816,7 +814,7 @@ const handleUpload = async () => {
                   <QrCode className="h-5 w-5 text-purple-600" />
                   <span>QR Code</span>
                 </CardTitle>
-                {/* <CardDescription>Scan to view asset details</CardDescription> */}
+                
               </CardHeader>
               <CardContent>
                 <div className=" p-2 rounded-lg ">
@@ -840,9 +838,9 @@ const handleUpload = async () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 
-                <ReassignEmployee product={product} onProductUpdate={setproduct} ></ReassignEmployee>
-                <TransferLocation  product={product} onProductUpdate={setproduct} ></TransferLocation>
-                <ReassignStatus  product={product} onProductUpdate={setproduct} ></ReassignStatus>
+                <ReassignEmployee product={product} onProductUpdate={setProduct} ></ReassignEmployee>
+                <TransferLocation  product={product} onProductUpdate={setProduct} ></TransferLocation>
+                <ReassignStatus  product={product} onProductUpdate={setProduct} ></ReassignStatus>
                 <Button className="w-full justify-start cursor-pointer" variant="outline" 
                  onClick={printQRCode} disabled={!product.dynamic_qr_code || loadingProduct}
                 >
@@ -859,6 +857,7 @@ const handleUpload = async () => {
         </div>
 
           </TabsContent>
+          
           <TabsContent value="history">            
             <ProductHistory productId={product.id}></ProductHistory>
           </TabsContent>
