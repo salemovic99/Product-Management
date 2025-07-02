@@ -17,7 +17,8 @@ export const LocationTable = ({ locations, onEdit, onDelete }) => {
         <div className='flex justify-center items-center'>
             <Image src="/No-data-pana.svg" alt='no data'  width={200} height={200}></Image>
         </div>
-        <div className="text-gray-400 text-lg mb-2">No Locations found</div>
+        <p className='text-gray-400'>No locations found</p>
+        
       </div>
     );
   }

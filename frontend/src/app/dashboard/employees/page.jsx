@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, X, Check, Search, Building2,LocationEdit, BriefcaseBusiness, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-
 import { Button } from '@/components/ui/button';
 import TableLoadingSkeleton from '@/components/TableLoadingSkeleton';
 import { 
@@ -29,8 +28,9 @@ import { useEmployeeSearch } from '@/hooks/useEmployeeSearch';
 import { EmployeesTable } from '@/components/EmployeesTable';
 import { useEmployeeForm } from '@/hooks/useEmployeeForm';
 import { EmployeeForm } from '@/components/EmployeeForm';
+import positionsService from '@/services/positionsService';
+import { toast } from 'sonner';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 const Employees = () => {
 
@@ -67,15 +67,18 @@ const Employees = () => {
 
    const fetchPositions = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/positions/?skip=0&limit=100`);
-        if (response.ok) {
-          const data = await response.json();
-          setPositions(data);
-        } else {
-          console.error("Failed to fetch positions");
-        }
+        const result = await positionsService.fetchAllPositions();
+
+        if (!result) {
+          toast.error("Failed to fetch positions");
+          return;
+        } 
+
+        setPositions(result); 
       } catch (err) {
-        console.error("Error fetching positions:", err);
+        toast.error("Error fetching positions...:", {
+          description:err.message
+        });
       } finally {
         setLoadingPositions(false);
       }

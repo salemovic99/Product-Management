@@ -1,15 +1,14 @@
 // app/layout.tsx (NO "use client" here)
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
-
 import LayoutWrapper from "../components/LayoutWrapper";
+import { Roboto } from 'next/font/google'
 
-
-// Fonts (if used in classname)
-const geist = Geist({ subsets: ["latin"] });
-
+const roboto = Roboto({
+  weight: ['400', '700'],
+  subsets: ['latin'],
+})
 
 export const metadata = {
   title: {
@@ -24,7 +23,7 @@ export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
       <html lang="en" className="">
-        <body className={`${geist.className} min-h-screen bg-gray-100 dark:bg-gray-900`}>
+        <body className={`${roboto.className} min-h-screen bg-gray-100 dark:bg-gray-900`}>
           <LayoutWrapper>{children}</LayoutWrapper>
           <Toaster position="top-center" expand={false} />
         </body>
