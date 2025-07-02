@@ -1,32 +1,50 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../../components/ui/card";
-import { Button } from "../../../../../components/ui/button";
-import { Input } from "../../../../../components/ui/input";
-import { Label } from "../../../../../components/ui/label";
-import { Textarea } from "../../../../../components/ui/textarea";
-import { Alert, AlertDescription } from "../../../../../components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../../components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, CheckCircle, AlertCircle, ArrowLeft,CalendarIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { cn } from "../../../../../lib/utils"
+import { cn } from "@/lib/utils"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../../../../components/ui/popover"
+} from "@/components/ui/popover"
 import { format } from "date-fns"
-import { Checkbox } from "../../../../../components/ui/checkbox"
-import { Calendar } from "../../../../../components/ui/calendar"
-import { Skeleton } from "../../../../../components/ui/skeleton";
-import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Calendar } from "@/components/ui/calendar"
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import locationsService from '@/services/locationService';
+import employeesService from '@/services/employeeService';
+import statusesService from '@/services/statusService';
+import productsService from '@/services/productService';
+import { z } from "zod";
+
+const productSchema = z.object({
+  name: z.coerce.string().regex(/[A-Za-z]/, { message: "Name must contain at least one letter",  }).min(3, { message: "Product name is required" }),
+  serial_number: z.string().min(8, { message: "Serial number is required" }).max(20, {message :"Serial number must not exceed 20 characters"}),
+  location_id: z.coerce.number().min(1, { message: "Location is required" }),
+  status_id: z.coerce.number().min(1, { message: "Status is required" }),
+  in_warehouse: z.boolean(),
+  note: z.string().regex(/^[A-Za-z\s]+$/, { message: "Name must contain only letters and spaces",}).min(10, { message: "Note is required" }),
+  purchasing_date: z.coerce.date({
+  required_error: "Purchasing date is required",
+  invalid_type_error: "Invalid date",})
+});
 
 export default function EditProductPage() {
+
   const now = new Date();
-const formattedDate = now.toLocaleString(undefined, {
-  dateStyle: "medium",
-  timeStyle: "medium",
-});
+  const formattedDate = now.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
   const params = useParams();
   const productId = params?.productid ? parseInt(params.productid ) : null;
 
@@ -38,9 +56,8 @@ const formattedDate = now.toLocaleString(undefined, {
       our_serial_number: "",
       location_id: "",
       employee_id: "",
+      status_id:"",
       in_warehouse: "",
-      purchasing_date: "",
-      warranty_expire: "",
       note: "",
   });
   
@@ -48,63 +65,81 @@ const formattedDate = now.toLocaleString(undefined, {
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [employees, setEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [statuses, setStatuses] = useState([]);
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
+  
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [purchasingDate, setPurchasingDate] = useState();
-  const [warrantyExpire, setWarrantyExpire] = useState();
 
+  const [purchasingDate, setPurchasingDate] = useState(null);
+  const [warrantyExpire, setWarrantyExpire] = useState(null);
   const [inWarehouse, setInWarehouse] = useState(true);
+
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-
+  const [errors, setErrors] = useState({});//for validation
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch("http://localhost:8000/employees/");
-      if (response.ok) {
-        const data = await response.json();
-        setEmployees(data);
-      } else {
-        console.error("Failed to fetch employees");
-      }
+      const data = await employeesService.getAllEmployees();
+
+      if (!data) {
+        setError("Failed to fetch employees");
+      } 
+      setEmployees(data);
     } catch (err) {
-      console.error("Error fetching employees:", err);
+      toast.error("Error fetching employees:");
     } finally {
       setLoadingEmployees(false);
     }
   };
 
-   // Fetch employees on component mount
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+  
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch("http://localhost:8000/locations/");
-      if (response.ok) {
-        const data = await response.json();
-        setLocations(data);
-      } else {
-        console.error("Failed to fetch locations");
-      }
+      const data = await locationsService.getAllLocations()
+
+      if (!data) {
+        setError("Failed to fetch locations");
+        return;
+      }   
+      setLocations(data);
     } catch (err) {
-      console.error("Error fetching locations:", err);
+      toast.error("Error fetching locations");
     } finally {
       setLoadingLocations(false);
     }
   };
 
-  // Fetch locations on component mount
+  const fetchStatuses = async () => {
+    try {
+      const data = await statusesService.getAllStatuses();
+
+      if (!data) {
+        setError("Failed to fetch statuses");
+        return;
+      }   
+      setStatuses(data);
+    } catch (err) {
+      toast.error("Error fetching statuses", err);
+    } finally {
+      setLoadingStatuses(false);
+    }
+  };
+
+
   useEffect(() => {
+    fetchStatuses();
+    fetchEmployees();
     fetchLocations();
   }, []);
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/products/${productId}`);
-      if (response.ok) {
-        const product = await response.json();
+      const product = await productsService.getProductById(productId);
+      if (product) {
+       
         setInWarehouse(product.in_warehouse)
         setPurchasingDate(product.purchasing_date)
         setWarrantyExpire(product.warranty_expire) 
@@ -115,6 +150,7 @@ const formattedDate = now.toLocaleString(undefined, {
           our_serial_number: product.our_serial_number || "",
           location_id: product.location_id ? product.location_id.toString() : "",
           employee_id: product.employee_id ? product.employee_id.toString() : "",
+          status_id: product.status_id ? product.status_id.toString() : "",
           note: product.note ,
         });
       } else {
@@ -126,11 +162,11 @@ const formattedDate = now.toLocaleString(undefined, {
       setLoadingProduct(false);
       setTimeout(() => {
         setLoading(false)
-      }, 2);
+      }, 200);
     }
   };
 
-  // Fetch product data on component mount
+ 
   useEffect(() => {
 
     if (productId) {
@@ -138,31 +174,56 @@ const formattedDate = now.toLocaleString(undefined, {
     }
   }, [productId]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const validateField = (field, value) => {
+      const partialSchema = z.object({ [field]: productSchema.shape[field] });
+  
+      const result = partialSchema.safeParse({ [field]: value });
+  
+      setErrors((prev) => ({
+        ...prev,
+        [field]: result.success ? null : result.error.issues[0].message,
+      }));
+    };
+
+  const handleInputChange = (name, value) => {
+    // const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    validateField(name, value);
+    
   };
 
 
-  const validateForm = () => {
-    if (!formData.name.trim()) return "Product name is required";
-    if (!formData.serial_number.trim()) return "serial number is required";
-    if (!formData.our_serial_number.trim()) return "our serial number is required";
-    if (!formData.location_id.trim()) return "location is required";
-    return null;
-  };
-
+ 
   const handleUpdate = async () => {
-    const validationError = validateForm();
 
-    if (validationError) {
-      setError(validationError);
+    if (!inWarehouse && !formData.employee_id) {
+          toast.error("Employee is required when you choose not in warehouse")
+          return;
+        }
+
+    const validated = productSchema.safeParse({
+      ...formData,
+      in_warehouse: inWarehouse,
+      purchasing_date: purchasingDate,
+    });
+    console.log(validated)
+
+    if (!validated.success) {
+      const fieldErrors = {};
+      validated.error.errors.forEach(({ path, message }) => {
+        fieldErrors[path[0]] = message;
+      });
+      setErrors(fieldErrors);
       return;
+    } else {
+      setErrors({});
     }
-
+    console.log(typeof(purchasingDate))
+    
     setLoading(true);
     setError("");
     setSuccess(false);
@@ -171,26 +232,21 @@ const formattedDate = now.toLocaleString(undefined, {
       name: formData.name,
       serial_number: formData.serial_number,
       our_serial_number: formData.our_serial_number,
-      location_id: parseInt(formData.location_id), // ensure int
+      location_id: parseInt(formData.location_id),
+      status_id:formData.status_id, 
       employee_id: inWarehouse ? null : formData.employee_id ? parseInt(formData.employee_id) : null,
       in_warehouse: inWarehouse,
-      purchasing_date: purchasingDate ? purchasingDate: null,
+      purchasing_date: typeof(purchasingDate) !== 'string' ? purchasingDate?.toISOString().split("T")[0]: purchasingDate,
       warranty_expire: warrantyExpire ? warrantyExpire: null,
       note: formData.note || null,
     };
 
     try {
 
-      const response = await fetch(`http://localhost:8000/products/${productId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const result = await productsService.updateProduct(productId, data);
 
-       if (!response.ok){
-          toast.error('Something went wrong : ' + (await response.json()).detail) 
+       if (!result){
+          toast.error('Something went wrong ! ' ); 
           return;                   
         }
 
@@ -199,22 +255,22 @@ const formattedDate = now.toLocaleString(undefined, {
       toast.success('Product updated successfully',{
                           description : 'create at ' + formattedDate
                         });
-      //return to the previous page after successful update
+      
       setTimeout(() => {
-        window.history.back();
-      }, 500);
-      // Reset success message after 3 seconds
-      setTimeout(() => setSuccess(false), 1500);
+        goBack();
+      }, 300);
 
     } catch (err) {      
-      toast.error(err.message || "Something went wrong")
+      toast.error('Failed to update product', {
+            description: err.message || 'Unexpected error occurred',
+            duration: 5000,
+          });
     } finally {
       setLoading(false);
     }
   };
 
   const goBack = () => {
-    
     window.history.back();
   };
 
@@ -335,9 +391,10 @@ const formattedDate = now.toLocaleString(undefined, {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('name', e.target.value)}}
                   placeholder="Enter product name"
                 />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
               {/* Product serial number */}
@@ -347,9 +404,10 @@ const formattedDate = now.toLocaleString(undefined, {
                   id="serialNumber"
                   name="serial_number"
                   value={formData.serial_number}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('serial_number', e.target.value)}}
                   placeholder="Enter product serial number"
                 />
+                {errors.serial_number && <p className="text-red-500 text-sm mt-1">{errors.serial_number}</p>}
               </div>
 
               {/* Product our serial number */}
@@ -357,9 +415,11 @@ const formattedDate = now.toLocaleString(undefined, {
                 <Label htmlFor="ourSerialNumber">our serial number *</Label>
                 <Input
                   id="ourSerialNumber"
+                  readOnly
                   name="our_serial_number"
+                  className={'bg-gray-300'} 
                   value={formData.our_serial_number}
-                  onChange={handleInputChange}
+                  // onChange={handleInputChange}
                   placeholder="Enter product our serial number"
                 />
               </div>
@@ -373,7 +433,7 @@ const formattedDate = now.toLocaleString(undefined, {
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
-                        id="date-picker" // important to link with the label
+                        id="date-picker" 
                         variant={"outline"}
                         className={cn(
                           "w-[240px] justify-start text-left font-normal",
@@ -393,6 +453,7 @@ const formattedDate = now.toLocaleString(undefined, {
                       />
                     </PopoverContent>
                   </Popover>
+                  {errors.purchasing_date && <p className="text-red-500 text-sm mt-1">{errors.purchasing_date}</p>}
                 </div>
 
 
@@ -405,6 +466,7 @@ const formattedDate = now.toLocaleString(undefined, {
                       <Button
                         id="date-picker" 
                         variant={"outline"}
+                        disabled
                         className={cn(
                           "w-[240px] justify-start text-left font-normal",
                           !warrantyExpire && "text-muted-foreground"
@@ -420,6 +482,7 @@ const formattedDate = now.toLocaleString(undefined, {
                         selected={warrantyExpire}
                         onSelect={setWarrantyExpire}
                         initialFocus
+                        disabled 
                       />
                     </PopoverContent>
                   </Popover>
@@ -443,7 +506,7 @@ const formattedDate = now.toLocaleString(undefined, {
               </div>
             </div>
               
-              <div className={'grid grid-cols-2 gap-3'}>
+              <div className={'grid grid-cols-1 space-y-4   md:grid-cols-3 md:space-y-0 gap-3'}>
                 {/* location Dropdown */}
               <div className="space-y-2">
                 <Label htmlFor="department">Location name *</Label>
@@ -467,6 +530,36 @@ const formattedDate = now.toLocaleString(undefined, {
                           value={location.id.toString()}
                         >
                           {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* statuses Dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="department">status  *</Label>
+                {loadingStatuses ? (
+                  <div className="flex items-center space-x-2 p-3 border rounded-md">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-500">Loading statuses...</span>
+                  </div>
+                ) : (
+                  <Select 
+                    value={formData.status_id} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem 
+                          key={status.id} 
+                          value={status.id.toString()}
+                        >
+                          {status.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -513,10 +606,11 @@ const formattedDate = now.toLocaleString(undefined, {
                   id="note"
                   name="note"
                   value={formData.note}
-                  onChange={handleInputChange}
+                  onChange={(e) => {handleInputChange('note', e.target.value)}}
                   placeholder="Enter product note"
                   rows={4}
                 />
+                {errors.note && <p className="text-red-500 text-sm mt-1">{errors.note}</p>}
               </div>
 
               {/* Action Buttons */}
