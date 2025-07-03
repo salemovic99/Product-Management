@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Skeleton } from './ui/skeleton';
 import { Clock, User, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
+import productHistoryService from '@/services/productHistoryService';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 const ProductHistory = (productId) => {
@@ -21,14 +22,12 @@ const ProductHistory = (productId) => {
 
         try {
             
-          const response = await fetch(`${API_BASE_URL}/products/${productId.productId}/history`);
-          if (response.ok) {
+          const result = await productHistoryService.getProductHistory(productId.productId);
 
-            const history = await response.json();
-
+          if (result) {
             // Enrich each item with employee names
             const enrichedHistory = await Promise.all(
-            history.map(async (item) => {
+            result.map(async (item) => {
                 const prevEmpName = await fetchEmployeeName(item.previous_employee_id);
                 const newEmpName = await fetchEmployeeName(item.new_employee_id);
                 const prevLocName = await fetchLocationName(item.previous_location_id);
@@ -51,11 +50,13 @@ const ProductHistory = (productId) => {
           }
         } catch (err) {
           setError("Error loading product history: " + err.message);
+          toast.error("Error loading product history: ",{
+            description:err.message
+          })
         } finally {
           setLoadingProductHistory(false);  
-          setTimeout(() => {
-            setLoading(false)
-          }, 200);       
+          setLoading(false)
+               
         }
     }
     
@@ -146,7 +147,7 @@ const fetchLocationName = async (id) => {
           <h2 className="text-2xl font-bold text-gray-900">Product History</h2>
           <p className="text-gray-600 mt-1">Track all changes and transfers for Product ID: {productId.productId}</p>
         </div>
-        <Badge variant="outline" className="px-3 py-1">
+        <Badge variant="default" className="px-3 py-1">
           {productHistory.length} Records
         </Badge>
       </div>
