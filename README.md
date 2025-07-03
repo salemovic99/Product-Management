@@ -35,9 +35,8 @@ Product-Management/
 | Layer     | Technology             |
 |-----------|------------------------|
 | Frontend  | Next.js, React, TailwindCSS, ShadCN UI |
-| Backend   | FastAPI, SQLite, Pydantic, SQLAlchemy |
-| QR Codes  | `qrcode` with PIL styling |
-| Database  | SQLite                 |
+| Backend   | FastAPI, Postgresql, Pydantic, SQLAlchemy |
+| Database  | Postgres               |
 | Docker    | Docker, Docker Compose |
 
 ---
@@ -92,23 +91,3 @@ npm run dev
 - Generate QR: Automatically generated on creation
 
 ---
-
-## 📷 QR Code Styling
-
-The backend uses custom QR styles via:
-
-- `RoundedModuleDrawer`
-- `RadialGradientColorMask`
-- Saved in `qr_codes/` folder
-
----
-
-## 📦 Deployment Notes
-
-- Uses SQLite for simplicity — swap to PostgreSQL for production.
-- Add `.env` for secret config in both frontend and backend.
-- Images/QRs should be served from static or cloud bucket in production.
-
----
-
-
