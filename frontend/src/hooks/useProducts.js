@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import productsService from '@/services/productService';
 
+
 export const useProducts = (pageSize = 5) => {
 
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [searchTerm, setSearchTerm] = useState(''); 
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,10 +25,12 @@ export const useProducts = (pageSize = 5) => {
         productsService.getProducts(skip, pageSize, {
         status: selectedStatus,
         location: selectedLocation,
+        search:searchTerm
       }),
         productsService.getProductsCount({
                           status: selectedStatus,
                           location: selectedLocation,
+                          search:searchTerm
                       })
       ]);
 
@@ -113,9 +117,11 @@ export const useProducts = (pageSize = 5) => {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, pageSize,selectedLocation,selectedStatus]);
+  }, [currentPage, pageSize, selectedLocation,selectedStatus]);
 
   return {
+    searchTerm,
+    setSearchTerm,
     selectedLocation,
     selectedStatus,
     setSelectedLocation,

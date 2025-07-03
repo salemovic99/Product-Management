@@ -36,11 +36,13 @@ export default function ProductsPage() {
     const [darkMode, setDarkMode] = useState(false);
     const [location, setLocations] = useState([]);
     const [status, setStatus] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');  
     const [pageSize, setPageSize] = useState(5);
+     
    
     
     const {
+            searchTerm,
+            setSearchTerm,
             selectedLocation,
             selectedStatus,
             setSelectedLocation,
@@ -55,18 +57,20 @@ export default function ProductsPage() {
             setCurrentPage,
             createProduct,
             updateProduct,
-            deleteProduct}= useProducts(pageSize);
+            deleteProduct,
+            refetch}= useProducts(pageSize);
 
 
-    const filteredProducts = products.filter(product => {
-            const term = searchTerm.toLowerCase();
+    // const filteredProducts = products.filter(product => {
+    //         const term = searchTerm.toLowerCase();
 
-            return (
-                product.name.toLowerCase().includes(term) ||
-                product.serial_number.toLowerCase().includes(term) ||
-                product.id.toString().includes(term)
-            );
-    });
+    //         return (
+    //             product.name.toLowerCase().includes(term) ||
+    //             product.serial_number.toLowerCase().includes(term) ||
+    //             product.id.toString().includes(term)
+    //         );
+    // });
+    
    
     const fetchLocations = async () => {
     try {
@@ -98,6 +102,25 @@ export default function ProductsPage() {
       setError('Error fetching Locations: ' + err.message);
     } 
   };
+
+  const handleSearch = async (value) => {
+
+        if(value === '' || value === null || value === undefined){
+            setSearchTerm('');
+            refetch()
+        }
+
+        setSearchTerm(value.toLowerCase().trim());
+        refetch(); 
+  }
+
+  const handleRestFilter = async ()=>{
+    setSelectedLocation('all');
+    setSelectedStatus('all');
+    setSearchTerm('');
+    setPageSize(5);
+    refetch();
+  }
    
 
     useEffect(() => {
@@ -105,9 +128,6 @@ export default function ProductsPage() {
         fetchStatuses();
     }, [currentPage]);
 
-    useEffect(() => {
-        setCurrentPage(1);
-        }, [searchTerm]);
 
     
     if (loading) {
@@ -163,7 +183,10 @@ export default function ProductsPage() {
                                     type="text"
                                     placeholder="Search products by id, name, serial number..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value) }
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleSearch(e.target.value);
+                                    }}
                                     className="pl-10"
                                 />
                             </div>
@@ -242,11 +265,23 @@ export default function ProductsPage() {
                             </Select>
                            </div>
 
+                           {/* reset buttone */}
+                           <div>
+                            <Button variant="outline"
+                                     className={'cursor-pointer'}
+                                      onClick={handleRestFilter}
+                                      disabled={searchTerm === '' && selectedStatus === 'all' && selectedLocation === 'all' && pageSize === 5}
+                                      >
+                                <Filter className='h-4 w-4 mr-2 inline-block' />
+                                 Reset
+                            </Button>
+                           </div>
+
 
                         </CardHeader>
                         
                         <CardContent className="p-0 sm:p-6">
-                            <ProductsTable products={filteredProducts} onDelete={deleteProduct}>
+                            <ProductsTable products={products} onDelete={deleteProduct}>
                             </ProductsTable>
                         </CardContent>
 

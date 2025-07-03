@@ -9,7 +9,8 @@ export class productService{
                         skip,
                         limit,
                         status: filters.status || 'all',
-                        location: filters.location || 'all'
+                        location: filters.location || 'all',
+                        search: filters.search || ''
                       });
 
       const response = await fetch(`${this.apiBaseUrl}/products/?${params.toString()}`);
@@ -86,7 +87,8 @@ export class productService{
 
     const params = new URLSearchParams({
       status: filters.status || 'all',
-      location: filters.location || 'all'
+      location: filters.location || 'all',
+      search: filters.search || ''
     });
     
       const response = await fetch(`${this.apiBaseUrl}/products/count?${params}`);

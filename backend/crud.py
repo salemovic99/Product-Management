@@ -1,3 +1,5 @@
+from operator import or_
+from tokenize import String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -9,6 +11,7 @@ from fastapi import HTTPException, Query
 import os
 import shutil
 import time
+from sqlalchemy import String
 
 # Location CRUD operations
 async def create_location(db: AsyncSession, location: schemas.LocationCreate):
@@ -251,6 +254,7 @@ async def get_products(
     limit: int = 10,
     status: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    search:Optional[str] = Query(None)
 ):
     query = (
         select(models.Product)
@@ -268,6 +272,17 @@ async def get_products(
 
     if location and location.lower() != "all":
         query = query.join(models.Location).where(models.Location.name.ilike(location))
+
+    if search:
+        query = query.filter(
+            or_(
+            or_(
+                models.Product.name.ilike(f"%{search}%"),
+                models.Product.serial_number.ilike(f"%{search}%")
+            ),
+            models.Product.id.cast(String).ilike(f"%{search}%")
+        )
+    )
 
     query = query.order_by(models.Product.id).offset(skip).limit(limit)
 

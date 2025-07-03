@@ -1,3 +1,5 @@
+from operator import or_
+from tokenize import String
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile,Query
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +14,7 @@ from qr import QR_CODES_DIR
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 from seed_data import seed_statuses
+from sqlalchemy import String
 
 # Create QR codes directory if it doesn't exist
 os.makedirs(QR_CODES_DIR, exist_ok=True)
@@ -200,6 +203,7 @@ async def create_product(product: schemas.ProductCreate, db: AsyncSession= Depen
 async def get_product_count(
     status: str = Query(None),
     location: str = Query(None),
+    search:str=Query(None),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(func.count(models.Product.id)).select_from(models.Product)
@@ -209,6 +213,17 @@ async def get_product_count(
 
     if location and location.lower() != "all":
         query = query.join(models.Location).where(models.Location.name.ilike(location))
+
+    if search:
+        query = query.filter(
+            or_(
+            or_(
+                models.Product.name.ilike(f"%{search}%"),
+                models.Product.serial_number.ilike(f"%{search}%")
+            ),
+            models.Product.id.cast(String).ilike(f"%{search}%")
+        )
+        )
 
     result = await db.execute(query)
     count = result.scalar()
@@ -220,13 +235,15 @@ async def read_products(
     limit: int = 10,
     status: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    search:Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
     products = await crud.get_products(db=db,
         skip=skip,
         limit=limit,
         status=status,
-        location=location)
+        location=location,
+        search=search)
     return products
 
 @app.get("/products/warehouse", response_model=List[schemas.Product])

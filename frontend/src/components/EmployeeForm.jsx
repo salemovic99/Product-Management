@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
