@@ -4,6 +4,9 @@ import productsService from '@/services/productService';
 
 export const useProducts = (pageSize = 5) => {
 
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedLocation, setSelectedLocation] = useState("all");
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,8 +20,14 @@ export const useProducts = (pageSize = 5) => {
       const skip = (currentPage - 1) * pageSize;
       
       const [ProductsData, count] = await Promise.all([
-        productsService.getProducts(skip, pageSize),
-        productsService.getProductsCount()
+        productsService.getProducts(skip, pageSize, {
+        status: selectedStatus,
+        location: selectedLocation,
+      }),
+        productsService.getProductsCount({
+                          status: selectedStatus,
+                          location: selectedLocation,
+                      })
       ]);
 
       setProducts(ProductsData);
@@ -104,9 +113,13 @@ export const useProducts = (pageSize = 5) => {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize,selectedLocation,selectedStatus]);
 
   return {
+    selectedLocation,
+    selectedStatus,
+    setSelectedLocation,
+    setSelectedStatus,
     products,
     loading,
     setLoading,

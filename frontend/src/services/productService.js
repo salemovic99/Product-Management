@@ -3,9 +3,16 @@ export class productService{
     this.apiBaseUrl = apiBaseUrl;
   }
 
-  async getProducts(skip = 0, limit = 5) {
+  async getProducts(skip = 0, limit = 5, filters={}) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/products/?skip=${skip}&limit=${limit}`);
+      const params = new URLSearchParams({
+                        skip,
+                        limit,
+                        status: filters.status || 'all',
+                        location: filters.location || 'all'
+                      });
+
+      const response = await fetch(`${this.apiBaseUrl}/products/?${params.toString()}`);
       const responseBody = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -74,10 +81,15 @@ export class productService{
     } 
   }
 
-  async getProductsCount() {
+  async getProductsCount(filters = {}) {
    try {
+
+    const params = new URLSearchParams({
+      status: filters.status || 'all',
+      location: filters.location || 'all'
+    });
     
-      const response = await fetch(`${this.apiBaseUrl}/products/count`);
+      const response = await fetch(`${this.apiBaseUrl}/products/count?${params}`);
 
       const responseBody = await response.json().catch(() => null);
 

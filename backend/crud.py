@@ -5,7 +5,7 @@ from typing import List, Optional
 import models
 import schemas
 from qr import create_qr_code_image, delete_qr_code_image
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 import os
 import shutil
 import time
@@ -245,13 +245,33 @@ async def get_product_by_our_serial(db: AsyncSession, our_serial_number: str):
     result = await db.execute(select(models.Product).filter(models.Product.our_serial_number == our_serial_number))
     return result.scalars().first()
 
-async def get_products(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Product).options(
+async def get_products(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 10,
+    status: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+):
+    query = (
+        select(models.Product)
+        .options(
             selectinload(models.Product.status),
             selectinload(models.Product.employee).selectinload(models.Employee.position),
             selectinload(models.Product.location)
-        ).order_by(models.Product.id)
-        .offset(skip).limit(limit))
+        )
+        .select_from(models.Product)
+    )
+
+    # Apply filters if needed
+    if status and status.lower() != "all":
+        query = query.join(models.Status).where(models.Status.name.ilike(status))
+
+    if location and location.lower() != "all":
+        query = query.join(models.Location).where(models.Location.name.ilike(location))
+
+    query = query.order_by(models.Product.id).offset(skip).limit(limit)
+
+    result = await db.execute(query)
     return result.scalars().all()
 
 async def get_products_in_warehouse(db: AsyncSession, skip: int = 0, limit: int = 100):

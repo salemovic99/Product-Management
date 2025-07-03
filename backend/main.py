@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile,Query
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
-from typing import List
+from typing import List, Optional
 import models
 import schemas
 import crud
@@ -197,14 +197,36 @@ async def create_product(product: schemas.ProductCreate, db: AsyncSession= Depen
 
 
 @app.get("/products/count", response_model=dict)
-async def get_product_count(db: AsyncSession= Depends(get_db)):
-    result = await db.execute(select(func.count(models.Product.id)))
+async def get_product_count(
+    status: str = Query(None),
+    location: str = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(func.count(models.Product.id)).select_from(models.Product)
+
+    if status and status.lower() != "all":
+        query = query.join(models.Status).where(models.Status.name.ilike(status))
+
+    if location and location.lower() != "all":
+        query = query.join(models.Location).where(models.Location.name.ilike(location))
+
+    result = await db.execute(query)
     count = result.scalar()
     return {"count": count}
 
 @app.get("/products/", response_model=List[schemas.Product])
-async def read_products(skip: int = 0, limit: int = 100, db: AsyncSession= Depends(get_db)):
-    products = await crud.get_products(db, skip=skip, limit=limit)
+async def read_products(
+    skip: int = 0,
+    limit: int = 10,
+    status: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    products = await crud.get_products(db=db,
+        skip=skip,
+        limit=limit,
+        status=status,
+        location=location)
     return products
 
 @app.get("/products/warehouse", response_model=List[schemas.Product])

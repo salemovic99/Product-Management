@@ -27,18 +27,25 @@ import {
 import { useProducts } from '@/hooks/useProducts';
 import { ProductsTable } from '@/components/ProductsTable';
 import  locationsService  from '@/services/locationService';
+import statusesService from '@/services/statusService';
+import { toast } from 'sonner';
 
 
 export default function ProductsPage() {
 
     const [darkMode, setDarkMode] = useState(false);
     const [location, setLocations] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    
+    const [status, setStatus] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');  
     const [pageSize, setPageSize] = useState(5);
-    const [selectedLocation, setSelectedLocation] = useState('all');
+   
     
-    const { products,
+    const {
+            selectedLocation,
+            selectedStatus,
+            setSelectedLocation,
+            setSelectedStatus,
+            products,
             loading,
             setLoading,
             error,
@@ -49,24 +56,18 @@ export default function ProductsPage() {
             createProduct,
             updateProduct,
             deleteProduct}= useProducts(pageSize);
-   
-    
+
+
     const filteredProducts = products.filter(product => {
-    
-        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            product.serial_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            product.id.toString().includes(searchTerm);
-        
-        const matchesLocation = selectedLocation === 'all' || 
-                            product.location.name.toLowerCase() === selectedLocation.toLowerCase();
-        
-        return matchesSearch && matchesLocation;
-    }).sort((a, b) =>  a.id - b.id ); ;
+            const term = searchTerm.toLowerCase();
 
-    const filterByLocation = (value) => {
-        setSelectedLocation(value);
-    }
-
+            return (
+                product.name.toLowerCase().includes(term) ||
+                product.serial_number.toLowerCase().includes(term) ||
+                product.id.toString().includes(term)
+            );
+    });
+   
     const fetchLocations = async () => {
     try {
 
@@ -81,10 +82,32 @@ export default function ProductsPage() {
       }, 300);
     }
   };
+    const fetchStatuses = async () => {
+    try {
+
+      const data = await statusesService.getAllStatuses();
+      if(!data)
+      {
+        toast.error("fail to load status");
+        return;
+      }
+
+      setStatus(data);
+
+    } catch (err) {
+      setError('Error fetching Locations: ' + err.message);
+    } 
+  };
+   
 
     useEffect(() => {
         fetchLocations();
+        fetchStatuses();
     }, [currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        }, [searchTerm]);
 
     
     if (loading) {
@@ -131,7 +154,7 @@ export default function ProductsPage() {
 
                     {/* Products List */}
                     <Card className={` flex flex-col justify-between`}>
-                        <CardHeader className=" grid grid-clos-1 md:grid-cols-3 gap-4">
+                        <CardHeader className=" grid grid-clos-1 md:grid-cols-4">
 
                             {/* Search */}
                             <div className="relative ">
@@ -140,14 +163,16 @@ export default function ProductsPage() {
                                     type="text"
                                     placeholder="Search products by id, name, serial number..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => setSearchTerm(e.target.value) }
                                     className="pl-10"
                                 />
                             </div>
 
-                            
-                            <Select value={searchTerm} onValueChange={(value) => filterByLocation(value)}>
-                                    <SelectTrigger className="w-[180px]">
+                            {/* filter by location */}
+                            <div className='flex items-center space-x-3'>
+                                <p className='text-slate-600'>locations</p>
+                                <Select value={selectedLocation} onValueChange={(value) => setSelectedLocation(value)}>
+                                    <SelectTrigger className="w-[150px]">
                                         <SelectValue placeholder="Filter By Location" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -156,24 +181,54 @@ export default function ProductsPage() {
                                             <Filter className='h-4 w-4 mr-2 inline-block' />
                                                 Filter By location
                                             </SelectLabel>                                            
-                                            <SelectItem value="all" >
-                                                <Building2 className='h-4 w-4 mr-2 inline-block' />
-                                                All Locations
+                                            <SelectItem value="all" >                                                
+                                                All 
                                             </SelectItem>
                                             {location.map((loc) => (
-                                                <SelectItem key={loc.id} value={String(loc.name).trim()} >
-                                                    <MapPin className='h-4 w-4 mr-2 inline-block' />
+                                                <SelectItem key={loc.id} value={String(loc.name).trim()} >                                                    
                                                     {loc.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
                                     </SelectContent>
                             </Select>
+                            </div>
+
+                            {/* Filter by Status */}
+                            <div className='flex items-center space-x-3'>
+                                <p className='text-slate-600'>statuses</p>
+                                <Select value={selectedStatus} onValueChange={(value) => {
+                                                                    setSelectedStatus(value)
+                                                                    }}>
+                                <SelectTrigger className="w-[130px]">
+                                    <SelectValue placeholder="Filter By Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>
+                                            <Filter className='h-4 w-4 mr-2 inline-block' />
+                                            Filter By Status
+                                        </SelectLabel>
+                                        <SelectItem value="all">
+                                            All 
+                                        </SelectItem>
+                                        {status.map((sta) => (
+                                                <SelectItem key={sta.id} value={String(sta.name).trim()} >
+                                                    {sta.name}
+                                                </SelectItem>
+                                            ))}
+                   
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            </div>
 
                             
                             {/* select page size */}
-                            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-                                    <SelectTrigger className="w-[180px]">
+                           <div className='flex items-center space-x-3'>
+                            <p className='text-slate-600'>page size</p>
+                             <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                                    <SelectTrigger className="w-[130px]">
                                         <SelectValue placeholder="Select a page size" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -185,13 +240,13 @@ export default function ProductsPage() {
                                         </SelectGroup>
                                     </SelectContent>
                             </Select>
+                           </div>
 
 
                         </CardHeader>
                         
                         <CardContent className="p-0 sm:p-6">
                             <ProductsTable products={filteredProducts} onDelete={deleteProduct}>
-
                             </ProductsTable>
                         </CardContent>
 
