@@ -1,7 +1,7 @@
 // services/positionsService.js
 class PositionsService {
-  constructor() {
-    this.API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+  constructor(apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') {
+    this.API_BASE_URL = apiBaseUrl;
   }
 
   async fetchPositions(page = 1, pageSize = 5) {

@@ -6,17 +6,18 @@ import { Skeleton } from './ui/skeleton';
 import { Clock, User, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import productHistoryService from '@/services/productHistoryService';
+import locationsService from '@/services/locationService';
+import employeesService from '@/services/employeeService';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
 const ProductHistory = (productId) => {
-
 
     const[productHistory, setProductHistory] = useState([]);
     const [error, setError] = useState("");
     const [loadingProductHistory, setLoadingProductHistory] = useState(true);
     const [loading, setLoading] = useState(true);
 
-    const [employeeName, setEmployeeName] = useState();
+    // const [employeeName, setEmployeeName] = useState();
 
     const fetchProductHistory = async ()=>{
 
@@ -68,10 +69,10 @@ const ProductHistory = (productId) => {
   const fetchEmployeeName = async (id) => {
   if (!id) return 'Unassigned';
   try {
-    const res = await fetch(`${API_BASE_URL}/employees/${id}`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return data.name;
+    const result = await employeesService.getEmployeeById(id);
+    if (!result) throw new Error();
+  
+    return result.name;
   } catch {
     return `Employee ${id}`;
   }
@@ -81,10 +82,9 @@ const ProductHistory = (productId) => {
 const fetchLocationName = async (id) => {
   if (!id) return 'Unassigned';
   try {
-    const res = await fetch(`${API_BASE_URL}/locations/${id}`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return data.name;
+    const result = await locationsService.getLocationById(id);
+    if (!result) throw new Error();
+    return result.name;
   } catch {
     return `Location ${id}`;
   }
@@ -98,9 +98,7 @@ const fetchLocationName = async (id) => {
    useEffect(() => {
     fetchProductHistory();
   }, [productId]);
-
  
-  
 
   if(loading)
   {

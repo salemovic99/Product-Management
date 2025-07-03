@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date, datetime
 
@@ -40,7 +40,7 @@ class Location(LocationBase):
 # Employee Schemas
 class EmployeeBase(BaseModel):
     name: str
-    employee_id: int
+    employee_id: int = Field(..., ge=1, le=2147483647) 
     phone_number: Optional[str] = None
     position_id: int
 
@@ -167,4 +167,3 @@ class ProductFile(BaseModel):
 
     class Config:
         from_attributes = True
-

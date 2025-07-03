@@ -98,7 +98,7 @@ const Locations = () => {
         
 
         {/* Locations List */}
-        <Card className="m-5 h-[500px]">
+        <Card className="m-5 ">
           <CardHeader className="grid grid-cols-2">
             {/* Search */}
             <div className="relative">

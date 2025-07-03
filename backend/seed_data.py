@@ -1,25 +1,17 @@
-from sqlalchemy.orm import Session
-from database import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from models import Status
+import models
 
-def seed_statuses():
-    db: Session = SessionLocal()
-
-    statuses = [
-        "in_use",
-        "damaged",
-        "lost",
-        "under_repair"   
-    ]
-
-    for status in statuses:
-        exists = db.query(Status).filter(Status.name == status).first()
-        if not exists:
-            db.add(Status(name=status))
-
-    db.commit()
-    db.close()
-
-if __name__ == "__main__":
-    seed_statuses()
-    print("Statuses seeded.")
+async def seed_statuses(session: AsyncSession):
+    result = await session.execute(select(models.Status))
+    existing = result.scalars().first()
+    if not existing:
+        statuses = [
+            models.Status(name="in_use"),
+            models.Status(name="damaged"),
+            models.Status(name="lost"),
+            models.Status(name="under_repair"),
+        ]
+        session.add_all(statuses)
+        await session.commit()

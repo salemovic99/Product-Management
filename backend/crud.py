@@ -1,4 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from typing import List, Optional
 import models
 import schemas
@@ -6,23 +8,27 @@ from qr import create_qr_code_image, delete_qr_code_image
 from fastapi import HTTPException
 import os
 import shutil
+import time
 
 # Location CRUD operations
-def create_location(db: Session, location: schemas.LocationCreate):
+async def create_location(db: AsyncSession, location: schemas.LocationCreate):
     db_location = models.Location(**location.model_dump())
     db.add(db_location)
-    db.commit()
-    db.refresh(db_location)
+    await db.commit()
+    await db.refresh(db_location)
     return db_location
 
-def get_location(db: Session, location_id: int):
-    return db.query(models.Location).filter(models.Location.id == location_id).first()
+async def get_location(db: AsyncSession, location_id: int):
+    result = await db.execute(select(models.Location).filter(models.Location.id == location_id))
+    return result.scalars().first()
 
-def get_locations(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Location).offset(skip).limit(limit).all()
+async def get_locations(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Location).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def update_location(db: Session, location_id: int, location: schemas.LocationUpdate):
-    db_location = db.query(models.Location).filter(models.Location.id == location_id).first()
+async def update_location(db: AsyncSession, location_id: int, location: schemas.LocationUpdate):
+    result = await db.execute(select(models.Location).filter(models.Location.id == location_id))
+    db_location = result.scalars().first()
 
     if db_location is None:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -31,187 +37,255 @@ def update_location(db: Session, location_id: int, location: schemas.LocationUpd
     for field, value in update_data.items():
         setattr(db_location, field, value)
         
-    db.commit()
-    db.refresh(db_location)
+    await db.commit()
+    await db.refresh(db_location)
     return db_location
 
-def delete_location(db: Session, location_id: int):
-    db_location = db.query(models.Location).filter(models.Location.id == location_id).first()
+async def delete_location(db: AsyncSession, location_id: int):
+    result = await db.execute(select(models.Location).filter(models.Location.id == location_id))
+    db_location = result.scalars().first()
 
-    if  db_location is None:
+    if db_location is None:
         raise HTTPException(status_code=404, detail="Location not found")
     
-      # Check if any products are using this location
-    in_use = db.query(models.Product).filter(models.Product.location_id == location_id).first()
+    # Check if any products are using this location
+    products_result = await db.execute(select(models.Product).filter(models.Product.location_id == location_id))
+    in_use = products_result.scalars().first()
     if in_use:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot delete location {location_id}: it is in use by one or more products."
+            detail=f"Cannot delete  {db_location.name}: it is in use by one or more products."
+        )
+
+    # Check if the employee is referenced in product_history
+    history_result = await db.execute(
+        select(models.ProductHistory).filter(models.ProductHistory.previous_location_id == location_id)
+    )
+    has_history = history_result.scalars().first()
+
+    if has_history:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete  {db_location.name}: They are referenced in product history."
         )
         
-    db.delete(db_location)
-    db.commit()
+    await db.delete(db_location)
+    await db.commit()
     return {"message": f"Location with ID {location_id} Deleted!"}
 
 # Position CRUD operations
-def create_position(db: Session, position: schemas.PositionCreate):
+async def create_position(db: AsyncSession, position: schemas.PositionCreate):
     db_position = models.Position(**position.model_dump())
     db.add(db_position)
-    db.commit()
-    db.refresh(db_position)
+    await db.commit()
+    await db.refresh(db_position)
     return db_position
 
-def get_position(db: Session, position_id: int):
-    return db.query(models.Position).filter(models.Position.id == position_id).first()
+async def get_position(db: AsyncSession, position_id: int):
+    result = await db.execute(select(models.Position).filter(models.Position.id == position_id))
+    return result.scalars().first()
 
-def get_positions(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Position).offset(skip).limit(limit).all()
+async def get_positions(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Position).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def update_position(db: Session, position_id: int, position: schemas.PositionUpdate):
-    db_position = db.query(models.Position).filter(models.Position.id == position_id).first()
+async def update_position(db: AsyncSession, position_id: int, position: schemas.PositionUpdate):
+    result = await db.execute(select(models.Position).filter(models.Position.id == position_id))
+    db_position = result.scalars().first()
 
     if not db_position:
         raise HTTPException(status_code=404, detail="Position not found")
     
-    # Update position fields
     update_data = position.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_position, field, value)
     
-    db.commit()
-    db.refresh(db_position)
+    await db.commit()
+    await db.refresh(db_position)
     return db_position
 
-def delete_position(db: Session, position_id: int):
-    db_position = db.query(models.Position).filter(models.Position.id == position_id).first()
+async def delete_position(db: AsyncSession, position_id: int):
+    result = await db.execute(select(models.Position).filter(models.Position.id == position_id))
+    db_position = result.scalars().first()
 
     if not db_position:
         raise HTTPException(status_code=404, detail="Position not found")
     
     # Check if the position is referenced by any employees
-    is_in_use = db.query(models.Employee).filter(models.Employee.position_id == position_id).first()
+    employees_result = await db.execute(select(models.Employee).filter(models.Employee.position_id == position_id))
+    is_in_use = employees_result.scalars().first()
     if is_in_use:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot delete position {position_id}: it is still assigned to an employee."
+            detail=f"Cannot delete {db_position.name}: it is still assigned to an employee."
         )
     
-    db.delete(db_position)
-    db.commit()
+    await db.delete(db_position)
+    await db.commit()
     return {"message": f"Position with ID {position_id} Deleted!"}
 
-
-
 # Employee CRUD operations
-def create_employee(db: Session, employee: schemas.EmployeeCreate):
+async def create_employee(db: AsyncSession, employee: schemas.EmployeeCreate):
     db_employee = models.Employee(**employee.model_dump())
     db.add(db_employee)
-    db.commit()
-    db.refresh(db_employee)
-    return db_employee
+    await db.commit()
+    
+    result = await db.execute(
+        select(models.Employee)
+        .options(selectinload(models.Employee.position))
+        .filter(models.Employee.id == db_employee.id)
+    )
+    return result.scalars().first()
 
-def get_employee(db: Session, unique_system_id: int):
-    return db.query(models.Employee).filter(models.Employee.id == unique_system_id).first()
+async def get_employee(db: AsyncSession, unique_system_id: int):
+    result = await db.execute(select(models.Employee).options(selectinload(models.Employee.position)).where(models.Employee.id == unique_system_id))
+    return result.scalars().first()
 
-def get_employee_by_employee_id(db: Session, employee_id: str):
-    return db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+async def get_employee_by_employee_id(db: AsyncSession, employee_id: int):
+    result = await db.execute(select(models.Employee).options(selectinload(models.Employee.position)).filter(models.Employee.employee_id == employee_id))
+    return result.scalars().first()
 
-def get_employees(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Employee).offset(skip).limit(limit).all()
+async def get_employees(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(
+        select(models.Employee)
+        .options(selectinload(models.Employee.position))
+        .order_by(models.Employee.id) 
+        .offset(skip)
+        .limit(limit)
+    )
+    return result.scalars().all()
 
-def update_employee(db: Session, unique_system_id: int, employee: schemas.EmployeeUpdate):
-    db_employee = db.query(models.Employee).filter(models.Employee.id == unique_system_id).first()
+async def update_employee(db: AsyncSession, unique_system_id: int, employee: schemas.EmployeeUpdate):
+    result = await db.execute(
+        select(models.Employee)
+        .options(selectinload(models.Employee.position))
+        .filter(models.Employee.id == unique_system_id)
+    )
+    db_employee = result.scalars().first()
     if not db_employee:
         raise HTTPException(status_code=404, detail="Employee not found")
-    # Update employee fields
+    
     update_data = employee.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_employee, field, value)
-    db.commit()
-    db.refresh(db_employee)
+    await db.commit()
+    await db.refresh(db_employee)
     return db_employee
 
-def delete_employee(db: Session, unique_system_id: int):
-    db_employee = db.query(models.Employee).filter(models.Employee.id == unique_system_id).first()
+async def delete_employee(db: AsyncSession, unique_system_id: int):
+    result = await db.execute(select(models.Employee).filter(models.Employee.id == unique_system_id))
+    db_employee = result.scalars().first()
     if not db_employee:
         raise HTTPException(status_code=404, detail=f"Employee with ID {unique_system_id} not found")
 
-        
     # Check if the employee is referenced in any products
-    is_in_use = db.query(models.Product).filter(models.Product.employee_id == unique_system_id).first()
+    products_result = await db.execute(select(models.Product).filter(models.Product.employee_id == db_employee.id))
+    is_in_use = products_result.scalars().first()
 
     if is_in_use:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot delete employee {unique_system_id}: They are still assigned to a product."
+            detail=f"Cannot delete {db_employee.name}: They are still assigned to a product."
         )
 
-    db.delete(db_employee)
-    db.commit()
+     # Check if the employee is referenced in product_history
+    history_result = await db.execute(
+        select(models.ProductHistory).filter(models.ProductHistory.previous_employee_id == db_employee.id)
+    )
+    has_history = history_result.scalars().first()
+
+    if has_history:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete {db_employee.name}: They are referenced in product history."
+        )
+
+
+    await db.delete(db_employee)
+    await db.commit()
     return {"message": f"Employee with ID {unique_system_id} deleted successfully."}
 
 # Product CRUD operations
-def create_product(db: Session, product: schemas.ProductCreate):
-    # Step 1: Create the product entry in the database
+async def create_product(db: AsyncSession, product: schemas.ProductCreate):
+    start = time.time()#for debug
     db_product = models.Product(**product.model_dump())
     db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
+    await db.flush()
+    await db.refresh(db_product)
     
-    # Generate QR code after product is created (so we have the ID)
-    product_url = f"http://localhost:3000/dashboard/products/details/{db_product.id}"
+    BASE_FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-    # Create QR code and update the product with the path
+    # Generate QR code after product is created
+    product_url = f"{BASE_FRONTEND_URL}/dashboard/products/details/{db_product.id}"
     qr_code_path = create_qr_code_image(product_url)
     db_product.dynamic_qr_code = qr_code_path
-    db.commit()
-    db.refresh(db_product)
-    
-    return db_product
 
-def get_product(db: Session, product_id: int):
-    return db.query(models.Product).filter(models.Product.id == product_id).first()
+    await db.commit()
+   
+    print("Create product took", time.time() - start)
+    return { "details" :"product added successfully!"}
 
-def get_product_by_serial(db: Session, serial_number: str):
-    return db.query(models.Product).filter(models.Product.serial_number == serial_number).first()
+async def get_product(db: AsyncSession, product_id: int):
+    result = await db.execute(
+        select(models.Product)
+        .options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        )
+        .filter(models.Product.id == product_id)
+    )
+    return result.scalars().first()
 
-def get_product_by_our_serial(db: Session, our_serial_number: str):
-    return db.query(models.Product).filter(models.Product.our_serial_number == our_serial_number).first()
+async def get_product_by_serial(db: AsyncSession, serial_number: str):
+    result = await db.execute(select(models.Product).filter(models.Product.serial_number == serial_number))
+    return result.scalars().first()
 
-def get_products(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).offset(skip).limit(limit).all()
+async def get_product_by_our_serial(db: AsyncSession, our_serial_number: str):
+    result = await db.execute(select(models.Product).filter(models.Product.our_serial_number == our_serial_number))
+    return result.scalars().first()
 
-def get_products_in_warehouse(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).filter(models.Product.in_warehouse == True).offset(skip).limit(limit).all()
+async def get_products(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).order_by(models.Product.id)
+        .offset(skip).limit(limit))
+    return result.scalars().all()
 
-def get_products_assigned_to_employees(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).filter(models.Product.in_warehouse == False).offset(skip).limit(limit).all()
+async def get_products_in_warehouse(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Product).filter(models.Product.in_warehouse == True).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def get_products_by_location(db: Session, location_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).filter(models.Product.location_id == location_id).offset(skip).limit(limit).all()
+async def get_products_assigned_to_employees(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Product).filter(models.Product.in_warehouse == False).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def get_products_by_employee(db: Session, employee_id: str, skip: int = 0, limit: int = 100):
-    return db.query(models.Product).filter(models.Product.employee_id == employee_id).offset(skip).limit(limit).all()
+async def get_products_by_location(db: AsyncSession, location_id: int, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Product).filter(models.Product.location_id == location_id).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def update_product(db: Session, product_id: int, product: schemas.ProductUpdate):
-    db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+async def get_products_by_employee(db: AsyncSession, employee_id: str, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Product).filter(models.Product.employee_id == employee_id).offset(skip).limit(limit))
+    return result.scalars().all()
+
+async def update_product(db: AsyncSession, product_id: int, product: schemas.ProductUpdate):
+    result = await db.execute(select(models.Product).filter(models.Product.id == product_id))
+    db_product = result.scalars().first()
 
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-
-
-    # Check if the serial number or our serial number is being updated
+    # Check if the serial number is being updated and already exists
     if product.serial_number and db_product.serial_number != product.serial_number:
-        existing_product = db.query(models.Product).filter(models.Product.serial_number == product.serial_number).first()
+        existing_result = await db.execute(select(models.Product).filter(models.Product.serial_number == product.serial_number))
+        existing_product = existing_result.scalars().first()
         if existing_product:
             raise HTTPException(status_code=400, detail="Serial number already exists for another product")
 
-   
-     # Determine what fields are being updated
+    # Track changes for history
     update_data = product.model_dump(exclude_unset=True)
-
-    # If the product is being moved to a different location or assigned to an employee, update the history
     changes = {}
 
     if "employee_id" in update_data and db_product.employee_id != product.employee_id:
@@ -220,15 +294,12 @@ def update_product(db: Session, product_id: int, product: schemas.ProductUpdate)
     if "location_id" in update_data and db_product.location_id != product.location_id:
         changes["location"] = (db_product.location_id, product.location_id)
 
-
-    
     # Update product fields
-    update_data = product.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_product, field, value)
     
-    db.commit()
-    db.refresh(db_product)
+    await db.commit()
+    await db.refresh(db_product)
 
     # Log to history if there were assignment changes
     if changes:
@@ -238,20 +309,17 @@ def update_product(db: Session, product_id: int, product: schemas.ProductUpdate)
             new_employee_id=changes.get("employee", (None, None))[1],
             previous_location_id=changes.get("location", (None, None))[0],
             new_location_id=changes.get("location", (None, None))[1],
-            note = "note",
-            changed_by="admin"  # You can customize this if you have auth
+            note="Product updated",
+            changed_by="admin"
         )
-        create_product_history(db, history)
-        
+        await create_product_history(db, history)
 
-      
-    return {"message" :f"product with ID {product_id} updated!"}
+    return {"message": f"Product with ID {product_id} updated!"}
 
-def delete_product(db: Session, product_id: int):
-    # Fetch the product
-    db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+async def delete_product(db: AsyncSession, product_id: int):
+    result = await db.execute(select(models.Product).filter(models.Product.id == product_id))
+    db_product = result.scalars().first()
 
-    # Handle not found
     if not db_product:
         raise HTTPException(status_code=404, detail=f"Product with ID {product_id} not found")
     
@@ -260,11 +328,10 @@ def delete_product(db: Session, product_id: int):
         try:
             delete_qr_code_image(db_product.dynamic_qr_code)
         except Exception as e:
-            # Optional: log or handle if file deletion fails
             print(f"Warning: Failed to delete QR code image. Reason: {e}")
     
-    # Delete all files related to this product from the server
-    files = get_product_files(product_id, db)
+    # Delete all files related to this product
+    files = await get_product_files(product_id, db)
     if files:
         for file_record in files:
             file_path = file_record.file_path
@@ -274,7 +341,7 @@ def delete_product(db: Session, product_id: int):
             except Exception as e:
                 print(f"Warning: Failed to delete file {file_path}. Reason: {e}")
 
-     # ✅ Delete the product-specific folder
+    # Delete the product-specific folder
     product_folder_path = f"uploaded_files/product_{product_id}"
     try:
         if os.path.exists(product_folder_path):
@@ -282,35 +349,39 @@ def delete_product(db: Session, product_id: int):
     except Exception as e:
         print(f"Warning: Failed to delete folder {product_folder_path}. Reason: {e}")
 
-    # Delete product from DB
-    db.delete(db_product)
-    db.commit()
+    await db.delete(db_product)
+    await db.commit()
 
     return {"message": f"Product with ID {product_id} deleted successfully."}
 
-# def get_product_history(db: Session, product_id: int, skip: int = 0, limit: int = 100):
-#     return db.query(models.ProductHistory).filter(models.ProductHistory.product_id == product_id).offset(skip).limit(limit).all()
+async def get_product_history(db: AsyncSession, product_id: int, skip: int = 0, limit: int = 100):
+    result = await db.execute(
+        select(models.ProductHistory)
+        .filter(models.ProductHistory.product_id == product_id)
+        .order_by(models.ProductHistory.timestamp.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return result.scalars().all()
 
-def get_product_history(db: Session, product_id: int, skip: int = 0, limit: int = 100):
-    # Order by timestamp descending to get most recent changes first
-    return db.query(models.ProductHistory).filter(
-        models.ProductHistory.product_id == product_id
-    ).order_by(models.ProductHistory.timestamp.desc()).offset(skip).limit(limit).all()
-
-def create_product_history(db: Session, product_history: schemas.ProductHistoryCreate):
+async def create_product_history(db: AsyncSession, product_history: schemas.ProductHistoryCreate):
     db_product_history = models.ProductHistory(**product_history.model_dump())
     db.add(db_product_history)
-    db.commit()
-    db.refresh(db_product_history)
+    await db.commit()
+    await db.refresh(db_product_history)
     return db_product_history
 
-def get_product_files(product_id: int, db: Session):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+async def get_product_files(product_id: int, db: AsyncSession):
+    # Check if product exists
+    product_result = await db.execute(select(models.Product).filter(models.Product.id == product_id))
+    product = product_result.scalars().first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    files = db.query(models.ProductFile).filter(models.ProductFile.product_id == product_id).all()
+    files_result = await db.execute(select(models.ProductFile).filter(models.ProductFile.product_id == product_id))
+    files = files_result.scalars().all()
     return files
 
-def get_statuses(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Status).offset(skip).limit(limit).all()
+async def get_statuses(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Status).offset(skip).limit(limit))
+    return result.scalars().all()

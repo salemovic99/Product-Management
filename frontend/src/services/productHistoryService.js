@@ -1,11 +1,11 @@
 class ProductHistoryService{
-    constructor() {
-    this.API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    constructor(apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000') {
+    this.apiBaseUrl = apiBaseUrl;
   }
 
    async getProductHistory(id) {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/products/${id}/history`);
+      const response = await fetch(`${this.apiBaseUrl}/products/${id}/history`);
       
       const responseBody = await response.json().catch(() => null);
 

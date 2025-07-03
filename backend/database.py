@@ -1,21 +1,41 @@
-from sqlalchemy import create_engine
+import os
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+from models import Base
 
-SQLITE_DATABASE_URL = "sqlite:///./data/it_stock_controller.db"
+# Load environment variables
+load_dotenv()
 
-engine = create_engine(
-    SQLITE_DATABASE_URL, 
-    connect_args={"check_same_thread": False}
+# Get database URL from environment
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:admin@localhost:5432/stock_controllerdb")
+ 
+# Create async engine
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=True,  # Set to False in production
+    future=True
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create async session maker
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
 
-Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Async dependency for FastAPI
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+# Function to create tables (for development)
+async def create_tables():
+    print("Running create_tables...")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print("Tables created.")
