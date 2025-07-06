@@ -4,9 +4,14 @@ export class employeeService{
     this.apiBaseUrl = apiBaseUrl;
   }
 
-  async getEmployees(skip = 0, limit = 5) {
+  async getEmployees(skip = 0, limit = 5, filters={}) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/employees/?skip=${skip}&limit=${limit}`);
+       const params = new URLSearchParams({
+                        skip,
+                        limit,                  
+                        search: filters.search || ''
+                      });
+      const response = await fetch(`${this.apiBaseUrl}/employees/?${params.toString()}`);
       const responseBody = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -73,10 +78,12 @@ export class employeeService{
     } 
   }
 
-  async getEmployeeCount() {
+  async getEmployeeCount(filters = {}) {
    try {
-    
-     const response = await fetch(`${this.apiBaseUrl}/employees/count`);
+    const params = new URLSearchParams({
+        search: filters.search || ''
+      });
+    const response = await fetch(`${this.apiBaseUrl}/employees/count?${params}`);
 
     const responseBody = await response.json().catch(() => null);
 

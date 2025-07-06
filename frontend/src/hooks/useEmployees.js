@@ -10,6 +10,7 @@ export const useEmployees = (pageSize = 5) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEmployees, setTotalEmployees] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchEmployees = async () => {
     try {
@@ -17,8 +18,12 @@ export const useEmployees = (pageSize = 5) => {
       const skip = (currentPage - 1) * pageSize;
       
       const [EmployeesData, count] = await Promise.all([
-        employeesService.getEmployees(skip, pageSize),
-        employeesService.getEmployeeCount()
+        employeesService.getEmployees(skip, pageSize,{
+          search:searchTerm
+        }),
+        employeesService.getEmployeeCount({
+          search:searchTerm
+        })
       ]);
 
       setEmployees(EmployeesData);
@@ -109,6 +114,8 @@ export const useEmployees = (pageSize = 5) => {
   }, [currentPage, pageSize]);
 
   return {
+    searchTerm,
+    setSearchTerm,
     employees,
     loading,
     error,

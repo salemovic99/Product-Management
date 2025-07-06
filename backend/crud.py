@@ -156,14 +156,16 @@ async def get_employee_by_employee_id(db: AsyncSession, employee_id: int):
     result = await db.execute(select(models.Employee).options(selectinload(models.Employee.position)).filter(models.Employee.employee_id == employee_id))
     return result.scalars().first()
 
-async def get_employees(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(
-        select(models.Employee)
-        .options(selectinload(models.Employee.position))
-        .order_by(models.Employee.id) 
-        .offset(skip)
-        .limit(limit)
-    )
+async def get_employees(db: AsyncSession, skip: int = 0, limit: int = 100, search: Optional[str] = Query(None)):
+    query = select(models.Employee).options(selectinload(models.Employee.position))
+
+    if search:
+        query = query.where(
+            models.Employee.name.ilike(f"%{search}%")
+        )
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 async def update_employee(db: AsyncSession, unique_system_id: int, employee: schemas.EmployeeUpdate):

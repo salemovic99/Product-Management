@@ -97,7 +97,6 @@ async def create_location(location: schemas.LocationCreate, db: AsyncSession = D
 
 @app.get("/locations/count", response_model=dict)
 async def get_locations_count(search:str=Query(None),db: AsyncSession = Depends(get_db)):
-
     query = select(func.count(models.Location.id)).select_from(models.Location)
 
     if search:
@@ -140,14 +139,19 @@ async def create_employee(employee: schemas.EmployeeCreate, db: AsyncSession = D
     return await crud.create_employee(db=db, employee=employee)
 
 @app.get("/employees/count", response_model=dict)
-async def get_employees_count(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(func.count(models.Employee.id))
+async def get_employees_count(search:str=Query(None), db: AsyncSession = Depends(get_db)):
+    query = select(func.count(models.Employee.id)).select_from(models.Employee)
+
+    if search:
+        query = query.filter(models.Employee.name.ilike(f"%{search}%"))
+
+    result = await db.execute(query)
     count = result.scalar()
     return {"count": count}
 
 @app.get("/employees/", response_model=List[schemas.Employee])
-async def read_employees(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    employees = await crud.get_employees(db, skip=skip, limit=limit)
+async def read_employees(skip: int = 0, limit: int = 100 , search:str=Query(None), db: AsyncSession = Depends(get_db)):
+    employees = await crud.get_employees(db, skip=skip, limit=limit, search=search)
     return employees
 
 @app.get("/employees/{unique_system_id}", response_model=schemas.Employee)

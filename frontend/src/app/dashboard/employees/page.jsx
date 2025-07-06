@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Plus, Edit, Trash2, X, Check, Search, Building2,LocationEdit, BriefcaseBusiness, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Check, Search, Building2,LocationEdit, BriefcaseBusiness, Loader2, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import TableLoadingSkeleton from '@/components/TableLoadingSkeleton';
@@ -30,15 +30,19 @@ import { useEmployeeForm } from '@/hooks/useEmployeeForm';
 import { EmployeeForm } from '@/components/EmployeeForm';
 import positionsService from '@/services/positionsService';
 import { toast } from 'sonner';
-
+import SearchLoading from '@/components/SearchLoading';
 
 const Employees = () => {
 
   const [loadingPositions, setLoadingPositions] = useState(true);
   const [positions, setPositions] = useState([]);
   const [pageSize, setPageSize] = useState(5); 
- 
-  const { employees,
+  const [isSearching, setIsSearching] = useState(false);
+
+  const { 
+          searchTerm,
+          setSearchTerm,
+          employees,
           loading,
           error,
           currentPage,
@@ -47,9 +51,9 @@ const Employees = () => {
           setCurrentPage,
           createEmployee,
           updateEmployee,
-          deleteEmployee}= useEmployees(pageSize);
+          deleteEmployee,
+          refetch}= useEmployees(pageSize);
 
-  const {searchTerm, setSearchTerm, filteredEmployees} = useEmployeeSearch(employees);
   
   const formHandlers = {
     create: createEmployee,
@@ -88,6 +92,39 @@ const Employees = () => {
   useEffect(() => {
   fetchPositions(); 
     }, []);
+
+    const handleSearch = async (value) => {
+    
+          setIsSearching(true);
+          if(value === '' || value === null || value === undefined){
+              refetch()
+              setTimeout(() => {
+                setIsSearching(false)
+              }, 1000);
+          }
+    
+          setSearchTerm(value.toLowerCase().trim());
+          refetch()
+          setTimeout(() => {
+            setIsSearching(false)
+          }, 1000);
+    }
+    
+    const handleRestFilter = async ()=>{
+        if(searchTerm === '' || searchTerm === null || searchTerm === undefined){
+          setSearchTerm('');
+          refetch();
+      }
+      setSearchTerm('');
+      setPageSize(5); 
+      refetch();
+  }
+    
+  if (isSearching) {
+    return (
+        <SearchLoading />
+    );
+}
 
  if (loading) {
   return (
@@ -157,6 +194,9 @@ const Employees = () => {
                 placeholder="Search employee name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearch(e.target.value);
+                }}
                 className="pl-10"
               />
             </div>
@@ -175,17 +215,28 @@ const Employees = () => {
                         </SelectGroup>
                     </SelectContent>
             </Select>
+
+            {/* reset buttone */}
+              <div>
+              <Button variant="outline"
+                        className={'cursor-pointer'}
+                        onClick={handleRestFilter}
+                        disabled={searchTerm === '' && pageSize === 5}
+                        >
+                  <Filter className='h-4 w-4 mr-2 inline-block' />
+                    Reset
+              </Button>
+              </div>
           </CardHeader>
           
             <div className="bg-white ">
               
               <CardContent>
                 <EmployeesTable 
-                employees={filteredEmployees} 
+                employees={employees} 
                 onEdit={handleEdit}
                 onDelete={deleteEmployee} >
                 </EmployeesTable>
-                
               </CardContent>
               
             </div>
