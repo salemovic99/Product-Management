@@ -3,9 +3,14 @@ export class LocationService {
     this.apiBaseUrl = apiBaseUrl;
   }
 
-  async getLocations(skip = 0, limit = 5) {
+  async getLocations(skip = 0, limit = 5, filters={}) {
     try {
-        const response = await fetch(`${this.apiBaseUrl}/locations/?skip=${skip}&limit=${limit}`);
+      const params = new URLSearchParams({
+                        skip,
+                        limit,                  
+                        search: filters.search || ''
+                      });
+        const response = await fetch(`${this.apiBaseUrl}/locations/?${params.toString()}`);
         const responseBody = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -68,9 +73,12 @@ export class LocationService {
     }
   }
 
-  async getLocationCount() {
+  async getLocationCount(filters = {}) {
     try {
-        const response = await fetch(`${this.apiBaseUrl}/locations/count`);
+        const params = new URLSearchParams({
+        search: filters.search || ''
+      });
+        const response = await fetch(`${this.apiBaseUrl}/locations/count?${params}`);
         const responseBody = await response.json().catch(() => null);
 
         if (!response.ok) {

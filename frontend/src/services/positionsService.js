@@ -65,7 +65,7 @@ class PositionsService {
             `Server returned ${response.status}`;
           throw new Error(errorMessage);
         }
-        return responseBody;
+        return responseBody.count;
     } catch (error) {
       throw new Error(
       error.message || 'Unable to connect to the server. Please try again later.'

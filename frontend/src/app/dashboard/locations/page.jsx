@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Plus, Search, LocationEdit } from 'lucide-react';
+import { Plus, Search, LocationEdit,Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
@@ -13,11 +13,16 @@ import { useLocationForm } from '@/hooks/useLocationForm';
 import { useLocationSearch } from '@/hooks/useLocationSearch';
 import { LocationForm } from '@/components/LocationForm';
 import { LocationTable } from '@/components/LocationTable';
+import SearchLoading from '@/components/SearchLoading';
 
 const Locations = () => {
   const [pageSize, setPageSize] = useState(5);
+  const [resetting, setResetting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   
   const {
+    searchTerm,
+    setSearchTerm,
     locations,
     loading,
     error,
@@ -26,7 +31,8 @@ const Locations = () => {
     totalPages,
     createLocation,
     updateLocation,
-    deleteLocation
+    deleteLocation,
+    refetch
   } = useLocations(pageSize);
 
   const formHandlers = {
@@ -46,7 +52,40 @@ const Locations = () => {
     updateFormData
   } = useLocationForm(formHandlers);
 
-  const { searchTerm, setSearchTerm, filteredLocations } = useLocationSearch(locations);
+  
+
+  const handleSearch = async (value) => {
+
+      setIsSearching(true);
+      if(value === '' || value === null || value === undefined){
+          refetch()
+          setTimeout(() => {
+            setIsSearching(false)
+          }, 1000);
+      }
+
+      setSearchTerm(value.toLowerCase().trim());
+      refetch()
+      setTimeout(() => {
+        setIsSearching(false)
+      }, 1000);
+  }
+
+    const handleRestFilter = async ()=>{
+      if(searchTerm === '' || searchTerm === null || searchTerm === undefined){
+        setSearchTerm('');
+        refetch();
+    }
+    setSearchTerm('');
+    setPageSize(5); 
+    refetch();
+  }
+
+  if (isSearching) {
+    return (
+        <SearchLoading />
+    );
+}
 
   if (loading) {
     return <TableLoadingSkeleton />;
@@ -108,6 +147,9 @@ const Locations = () => {
                 placeholder="Search location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearch(e.target.value);
+                }}
                 className="pl-10"
               />
             </div>
@@ -126,11 +168,23 @@ const Locations = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
+
+            {/* reset buttone */}
+            <div>
+            <Button variant="outline"
+                      className={'cursor-pointer'}
+                      onClick={handleRestFilter}
+                      disabled={searchTerm === '' && pageSize === 5}
+                      >
+                <Filter className='h-4 w-4 mr-2 inline-block' />
+                  Reset
+            </Button>
+            </div>
           </CardHeader>
 
           <CardContent>
             <LocationTable
-              locations={filteredLocations}
+              locations={locations}
               onEdit={startEdit}
               onDelete={deleteLocation}
             />

@@ -25,8 +25,16 @@ async def get_location(db: AsyncSession, location_id: int):
     result = await db.execute(select(models.Location).filter(models.Location.id == location_id))
     return result.scalars().first()
 
-async def get_locations(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Location).offset(skip).limit(limit))
+async def get_locations(db: AsyncSession, skip: int = 0, limit: int = 100, search: Optional[str] = Query(None)):
+    query = select(models.Location)
+
+    if search:
+        query = query.where(
+            models.Location.name.ilike(f"%{search}%")
+        )
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 async def update_location(db: AsyncSession, location_id: int, location: schemas.LocationUpdate):

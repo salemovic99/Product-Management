@@ -96,14 +96,20 @@ async def create_location(location: schemas.LocationCreate, db: AsyncSession = D
     return await crud.create_location(db=db, location=location)
 
 @app.get("/locations/count", response_model=dict)
-async def get_locations_count(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(func.count(models.Location.id))
+async def get_locations_count(search:str=Query(None),db: AsyncSession = Depends(get_db)):
+
+    query = select(func.count(models.Location.id)).select_from(models.Location)
+
+    if search:
+        query = query.filter(models.Location.name.ilike(f"%{search}%"))
+
+    result = await db.execute(query)
     count = result.scalar()
     return {"count": count}
 
 @app.get("/locations/", response_model=List[schemas.Location])
-async def read_locations(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    locations = await crud.get_locations(db, skip=skip, limit=limit)
+async def read_locations(skip: int = 0, limit: int = 100,search:str=Query(None), db: AsyncSession = Depends(get_db)):
+    locations = await crud.get_locations(db, skip=skip, limit=limit, search=search)
     return locations
 
 @app.get("/locations/{location_id}", response_model=schemas.Location)

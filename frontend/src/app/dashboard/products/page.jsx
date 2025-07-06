@@ -29,6 +29,7 @@ import { ProductsTable } from '@/components/ProductsTable';
 import  locationsService  from '@/services/locationService';
 import statusesService from '@/services/statusService';
 import { toast } from 'sonner';
+import SearchLoading from '@/components/SearchLoading';
 
 
 export default function ProductsPage() {
@@ -37,7 +38,7 @@ export default function ProductsPage() {
     const [location, setLocations] = useState([]);
     const [status, setStatus] = useState([]);
     const [pageSize, setPageSize] = useState(5);
-     
+    const [isSearching, setIsSearching] = useState(false); 
    
     
     const {
@@ -104,21 +105,28 @@ export default function ProductsPage() {
   };
 
   const handleSearch = async (value) => {
-
+        setIsSearching(true);
         if(value === '' || value === null || value === undefined){
             setSearchTerm('');
-            refetch()
+            refetch(); 
+            setTimeout(() => {
+                setIsSearching(false);
+            }, 1000);
         }
 
         setSearchTerm(value.toLowerCase().trim());
         refetch(); 
+        setTimeout(() => {
+            setIsSearching(false);
+        }, 1000);
+        
   }
 
   const handleRestFilter = async ()=>{
     setSelectedLocation('all');
     setSelectedStatus('all');
-    setSearchTerm('');
     setPageSize(5);
+    setSearchTerm('');
     refetch();
   }
    
@@ -128,6 +136,12 @@ export default function ProductsPage() {
         fetchStatuses();
     }, [currentPage]);
 
+
+    if (isSearching) {
+    return (
+        <SearchLoading />
+    );
+}
 
     
     if (loading) {

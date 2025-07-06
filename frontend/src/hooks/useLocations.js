@@ -11,6 +11,7 @@ export const useLocations = (pageSize = 5) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLocations, setTotalLocations] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchLocations = async () => {
     try {
@@ -18,8 +19,12 @@ export const useLocations = (pageSize = 5) => {
       const skip = (currentPage - 1) * pageSize;
       
       const [locationsData, count] = await Promise.all([
-        locationService.getLocations(skip, pageSize),
-        locationService.getLocationCount()
+        locationService.getLocations(skip, pageSize,{
+          search:searchTerm
+        }),
+        locationService.getLocationCount({
+          search:searchTerm
+        })
       ]);
 
       setLocations(locationsData);
@@ -73,9 +78,11 @@ export const useLocations = (pageSize = 5) => {
 
   useEffect(() => {
     fetchLocations();
-  }, [currentPage, pageSize]);
+  }, [ currentPage, pageSize]);
 
   return {
+    searchTerm,
+    setSearchTerm,
     locations,
     loading,
     error,
