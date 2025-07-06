@@ -330,14 +330,19 @@ async def create_position(position: schemas.PositionCreate, db: AsyncSession= De
     return await crud.create_position(db=db, position=position)
 
 @app.get("/positions/count", response_model=dict)
-async def get_positions_count(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(func.count(models.Position.id)))
+async def get_positions_count(search: Optional[str] = Query(None), db: AsyncSession = Depends(get_db)):
+    query = select(func.count(models.Position.id)).select_from(models.Position)
+
+    if search:
+        query = query.filter(models.Position.name.ilike(f"%{search}%"))
+
+    result = await db.execute(query)
     count = result.scalar()
     return {"count": count}
 
 @app.get("/positions/", response_model=List[schemas.Position])
-async def read_positions(skip: int = 0, limit: int = 100, db: AsyncSession= Depends(get_db)):
-    positions = await crud.get_positions(db, skip=skip, limit=limit)
+async def read_positions(skip: int = 0, limit: int = 100,search: Optional[str] = Query(None), db: AsyncSession= Depends(get_db)):
+    positions = await crud.get_positions(db, skip=skip, limit=limit,search=search)
     return positions
 
 @app.get("/positions/{position_id}", response_model=schemas.Position)

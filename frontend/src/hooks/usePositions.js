@@ -10,6 +10,7 @@ export const usePositions = (pageSize = 5) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPosition, setTotalPosition] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const now = new Date();
   const formattedDate = now.toLocaleString(undefined, {
@@ -20,11 +21,15 @@ export const usePositions = (pageSize = 5) => {
   const fetchPositions = async () => {
     try {
       setLoading(true);
-      setError('');
+      const skip = (currentPage - 1) * pageSize;
       
       const [positionsData, count] = await Promise.all([
-        positionsService.fetchPositions(currentPage, pageSize),
-        positionsService.getPositionsCount()
+        positionsService.fetchPositions(skip, pageSize,{
+           search:searchTerm
+        }),
+        positionsService.getPositionsCount({
+          search:searchTerm
+        })
       ]);
 
       setPositions(positionsData);
@@ -107,11 +112,18 @@ export const usePositions = (pageSize = 5) => {
     }
   };
 
+  const resetFilters = async () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     fetchPositions();
-  }, [pageSize, currentPage]);
+  }, [searchTerm,pageSize, currentPage]);
 
   return {
+    searchTerm,
+    setSearchTerm,
     positions,
     loading,
     error,
@@ -122,6 +134,7 @@ export const usePositions = (pageSize = 5) => {
     createPosition,
     updatePosition,
     deletePosition,
-    refetch: fetchPositions
+    refetch: fetchPositions,
+    resetFilters
   };
 };

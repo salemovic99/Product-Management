@@ -96,8 +96,16 @@ async def get_position(db: AsyncSession, position_id: int):
     result = await db.execute(select(models.Position).filter(models.Position.id == position_id))
     return result.scalars().first()
 
-async def get_positions(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Position).offset(skip).limit(limit))
+async def get_positions(db: AsyncSession, skip: int = 0, limit: int = 100, search: Optional[str] = Query(None)):
+    query = select(models.Position)
+
+    if search:
+        query = query.where(
+            models.Position.name.ilike(f"%{search}%")
+        )
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 async def update_position(db: AsyncSession, position_id: int, position: schemas.PositionUpdate):

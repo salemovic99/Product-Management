@@ -4,10 +4,15 @@ class PositionsService {
     this.API_BASE_URL = apiBaseUrl;
   }
 
-  async fetchPositions(page = 1, pageSize = 5) {
+  async fetchPositions(skip = 0, limit = 5, filters={}) {
     try {
+      const params = new URLSearchParams({
+                        skip,
+                        limit,                  
+                        search: filters.search || ''
+                      });
       const response = await fetch(
-        `${this.API_BASE_URL}/positions/?skip=${(page - 1) * pageSize}&limit=${pageSize}`
+        `${this.API_BASE_URL}/positions/?${params}`
       );
       
       const responseBody = await response.json().catch(() => null);
@@ -52,9 +57,12 @@ class PositionsService {
     }
   }
 
-  async getPositionsCount() {
+  async getPositionsCount(filters = {}) {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/positions/count`);
+       const params = new URLSearchParams({
+        search: filters.search || ''
+      });
+      const response = await fetch(`${this.API_BASE_URL}/positions/count?${params}`);
       
       const responseBody = await response.json().catch(() => null);
 

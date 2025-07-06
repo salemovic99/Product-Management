@@ -97,7 +97,7 @@ const Employees = () => {
         e.preventDefault();
           let value = e.target.value;
           if(value === '' || value === null || value === undefined){
-            toast.info('search input is empty!');
+            toast.info('search box is empty!');
             return;
           }
 
@@ -179,7 +179,6 @@ const Employees = () => {
          >
 
         </EmployeeForm>
-
 
         <Card className="m-5 ">
           <CardHeader className={`grid grid-cols-2`}>

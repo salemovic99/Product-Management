@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Plus, Search, LocationEdit } from 'lucide-react';
+import { Plus, Search, LocationEdit, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
@@ -10,14 +10,18 @@ import TableLoadingSkeleton from '@/components/TableLoadingSkeleton';
 
 import { usePositions } from '@/hooks/usePositions';
 import { usePositionForm } from '@/hooks/usePositionForm';
-import { usePositionSearch } from '@/hooks/usePositionSearch';
 import { PositionForm } from '@/components/PositionForm';
 import { PositionTable } from '@/components/PositionTable';
+import SearchLoading from '@/components/SearchLoading';
+import { toast } from 'sonner';
 
 const Positions = () => {
   const [pageSize, setPageSize] = useState(5);
+  const [isSearching, setIsSearching] = useState(false);
   
   const {
+    searchTerm,
+    setSearchTerm,
     positions,
     loading,
     error,
@@ -27,7 +31,9 @@ const Positions = () => {
     setCurrentPage,
     createPosition,
     updatePosition,
-    deletePosition
+    deletePosition,
+    refetch,
+    resetFilters
   } = usePositions(pageSize);
 
   const formHandlers = {
@@ -47,8 +53,39 @@ const Positions = () => {
     updateFormData
   } = usePositionForm(formHandlers);
 
-  const { searchTerm, setSearchTerm, filteredPositions } = usePositionSearch(positions);
 
+  const handleSearch = async (e) => {
+        e.preventDefault();
+          let value = e.target.value;
+          if(value === '' || value === null || value === undefined){
+            toast.info('search box is empty!');
+            return;
+          }
+
+          setIsSearching(true);
+          setSearchTerm(value.toLowerCase().trim());
+          setTimeout(() => {
+            setIsSearching(false)
+          }, 500);
+    }
+    
+    const handleRestFilter = async ()=>{
+      
+      document.getElementById('searchInput').value = ''
+      setPageSize(5);
+      setTimeout(async () => {
+      await resetFilters()
+    }, 50);
+  }
+
+    
+    if (isSearching) {
+      return (
+          <SearchLoading />
+      );
+  }
+
+ 
   if (loading) {
     return <TableLoadingSkeleton />;
   }
@@ -105,32 +142,51 @@ const Positions = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="text"
+                id='searchInput'
                 placeholder="Search Position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                // value={searchTerm}
+                // onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearch(e);
+                }}
                 className="pl-10"
               />
             </div>
 
             {/* Page Size Selector */}
-            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a page size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Page Size</SelectLabel>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <div className='flex items-center space-x-3'>
+              <p className='text-slate-600'>page size</p>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Select a page size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Page Size</SelectLabel>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* reset button */}
+              <div>
+              <Button variant="outline"
+                        className={'cursor-pointer'}
+                        onClick={handleRestFilter}
+                        disabled={searchTerm === '' && pageSize === 5}
+                        >
+                  <Filter className='h-4 w-4 mr-2 inline-block' />
+                    Reset
+              </Button>
+              </div>
+
           </CardHeader>
 
           <CardContent>
             <PositionTable
-              positions={filteredPositions}
+              positions={positions}
               onEdit={startEdit}
               onDelete={deletePosition}
             />

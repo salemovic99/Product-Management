@@ -59,7 +59,7 @@ const Locations = () => {
       e.preventDefault();
       let value = e.target.value;
       if(value === '' || value === null || value === undefined){
-        toast.info('search input is empty!');
+        toast.info('search box is empty!');
         return;
       }
 
