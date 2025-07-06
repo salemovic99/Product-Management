@@ -115,9 +115,16 @@ export const useProducts = (pageSize = 5) => {
     }
   };
 
+  const resetFilters = async () => {
+    setSelectedLocation('all');
+    setSelectedStatus('all');
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, pageSize, selectedLocation,selectedStatus]);
+  }, [searchTerm, currentPage, pageSize, selectedLocation,selectedStatus]);
 
   return {
     searchTerm,
@@ -137,6 +144,7 @@ export const useProducts = (pageSize = 5) => {
     createProduct,
     updateProduct,
     deleteProduct,
-    refetch: fetchProducts
+    refetch: fetchProducts,
+    resetFilters
   };
 };

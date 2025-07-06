@@ -59,20 +59,10 @@ export default function ProductsPage() {
             createProduct,
             updateProduct,
             deleteProduct,
-            refetch}= useProducts(pageSize);
+            refetch,
+         resetFilters}= useProducts(pageSize);
 
 
-    // const filteredProducts = products.filter(product => {
-    //         const term = searchTerm.toLowerCase();
-
-    //         return (
-    //             product.name.toLowerCase().includes(term) ||
-    //             product.serial_number.toLowerCase().includes(term) ||
-    //             product.id.toString().includes(term)
-    //         );
-    // });
-    
-   
     const fetchLocations = async () => {
     try {
 
@@ -104,30 +94,31 @@ export default function ProductsPage() {
     } 
   };
 
-  const handleSearch = async (value) => {
-        setIsSearching(true);
-        if(value === '' || value === null || value === undefined){
-            setSearchTerm('');
-            refetch(); 
-            setTimeout(() => {
-                setIsSearching(false);
-            }, 1000);
-        }
+  const handleSearch = async (e) => {
 
+        e.preventDefault();
+        let value = e.target.value;
+
+        if(value === '' || value === null || value === undefined){
+            toast.info('search input is empty!');
+            return;
+        }
+        
+        setIsSearching(true);
         setSearchTerm(value.toLowerCase().trim());
-        refetch(); 
         setTimeout(() => {
             setIsSearching(false);
-        }, 1000);
+        }, 500);
         
   }
 
   const handleRestFilter = async ()=>{
-    setSelectedLocation('all');
-    setSelectedStatus('all');
+
+    document.getElementById('searchInput').value = ''
     setPageSize(5);
-    setSearchTerm('');
-    refetch();
+      setTimeout(async () => {
+      await resetFilters()
+    }, 50);
   }
    
 
@@ -194,12 +185,13 @@ export default function ProductsPage() {
                             <div className="relative ">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                                 <Input
+                                    id='searchInput'
                                     type="text"
                                     placeholder="Search products by id, name, serial number..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    // value={searchTerm}
+                                    // onChange={(e) => setSearchTerm(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSearch(e.target.value);
+                                        if (e.key === "Enter") handleSearch(e);
                                     }}
                                     className="pl-10"
                                 />
@@ -279,7 +271,7 @@ export default function ProductsPage() {
                             </Select>
                            </div>
 
-                           {/* reset buttone */}
+                           {/* reset button */}
                            <div>
                             <Button variant="outline"
                                      className={'cursor-pointer'}

@@ -10,10 +10,10 @@ import TableLoadingSkeleton from '@/components/TableLoadingSkeleton';
 
 import { useLocations } from '@/hooks/useLocations';
 import { useLocationForm } from '@/hooks/useLocationForm';
-import { useLocationSearch } from '@/hooks/useLocationSearch';
 import { LocationForm } from '@/components/LocationForm';
 import { LocationTable } from '@/components/LocationTable';
 import SearchLoading from '@/components/SearchLoading';
+import { toast } from 'sonner';
 
 const Locations = () => {
   const [pageSize, setPageSize] = useState(5);
@@ -32,7 +32,8 @@ const Locations = () => {
     createLocation,
     updateLocation,
     deleteLocation,
-    refetch
+    refetch,
+    resetFilters
   } = useLocations(pageSize);
 
   const formHandlers = {
@@ -54,31 +55,27 @@ const Locations = () => {
 
   
 
-  const handleSearch = async (value) => {
-
-      setIsSearching(true);
+  const handleSearch = async (e) => {
+      e.preventDefault();
+      let value = e.target.value;
       if(value === '' || value === null || value === undefined){
-          refetch()
-          setTimeout(() => {
-            setIsSearching(false)
-          }, 1000);
+        toast.info('search input is empty!');
+        return;
       }
 
+      setIsSearching(true);
       setSearchTerm(value.toLowerCase().trim());
-      refetch()
       setTimeout(() => {
         setIsSearching(false)
-      }, 1000);
+      }, 500);
   }
 
     const handleRestFilter = async ()=>{
-      if(searchTerm === '' || searchTerm === null || searchTerm === undefined){
-        setSearchTerm('');
-        refetch();
-    }
-    setSearchTerm('');
-    setPageSize(5); 
-    refetch();
+      document.getElementById('searchInput').value = ''
+      setPageSize(5);
+      setTimeout(async () => {
+      await resetFilters()
+    }, 50);
   }
 
   if (isSearching) {
@@ -143,20 +140,23 @@ const Locations = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
+                id='searchInput'
                 type="text"
                 placeholder="Search location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                // value={searchTerm}
+                // onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSearch(e.target.value);
+                    if (e.key === "Enter") handleSearch(e);
                 }}
                 className="pl-10"
               />
             </div>
 
             {/* Page Size Selector */}
-            <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
-              <SelectTrigger className="w-[180px]">
+            <div className='flex items-center space-x-3'>
+              <p className='text-slate-600'>page size</p>
+              <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+              <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Select a page size" />
               </SelectTrigger>
               <SelectContent>
@@ -168,8 +168,9 @@ const Locations = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
+            </div>
 
-            {/* reset buttone */}
+            {/* reset button */}
             <div>
             <Button variant="outline"
                       className={'cursor-pointer'}

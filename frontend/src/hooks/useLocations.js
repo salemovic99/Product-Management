@@ -76,9 +76,14 @@ export const useLocations = (pageSize = 5) => {
     }
   };
 
+  const resetFilters = async () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     fetchLocations();
-  }, [ currentPage, pageSize]);
+  }, [searchTerm ,currentPage, pageSize]);
 
   return {
     searchTerm,
@@ -93,6 +98,7 @@ export const useLocations = (pageSize = 5) => {
     createLocation,
     updateLocation,
     deleteLocation,
-    refetch: fetchLocations
+    refetch: fetchLocations,
+    resetFilters
   };
 };

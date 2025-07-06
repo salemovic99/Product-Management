@@ -109,9 +109,14 @@ export const useEmployees = (pageSize = 5) => {
     }
   };
 
+  const resetFilters = async () => {
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     fetchEmployees();
-  }, [currentPage, pageSize]);
+  }, [searchTerm, currentPage, pageSize]);
 
   return {
     searchTerm,
@@ -126,6 +131,7 @@ export const useEmployees = (pageSize = 5) => {
     createEmployee,
     updateEmployee,
     deleteEmployee,
-    refetch: fetchEmployees
+    refetch: fetchEmployees,
+    resetFilters
   };
 };
