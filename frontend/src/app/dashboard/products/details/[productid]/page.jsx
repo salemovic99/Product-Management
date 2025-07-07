@@ -38,6 +38,7 @@ import ProductHistory from '@/components/ProductHistory';
 import AttachmentTab from '@/components/AttachmentTab';
 import ReassignStatus from '@/components/ReassignStatus';
 import productsService from '@/services/productService';
+import productsFilesService from '@/services/productFilesService';
 
 export default function DetailsPage() {
 
@@ -335,8 +336,6 @@ const handleUpload = async () => {
 
   const input = document.getElementById('file-upload');
   const files = input.files;
-
-  
   const formData = new FormData();
 
   for (const file of files) {
@@ -345,28 +344,22 @@ const handleUpload = async () => {
 
   try {
 
-    const res = await fetch(`http://localhost:8000/products/${productId}/upload`, {
-            method: "POST",
-            body: formData,
-          });
+    const result = await productsFilesService.uploadProductFiles(productId, formData);
 
-    if (!res.ok) {
-        const error = await res.text();
+    if (!result) {
         toast.error('Upload failed',{
-              description : error
-            });
-        
+              description : res
+            });     
         return;
       }
-      toast.success("file uploaded successfully")
 
+      toast.success("file uploaded successfully")
       input.value = ""; 
       setAttachments([]);
     
   } catch (error) {
-  
-    toast.error('Upload failed',{
-          description : error
+    toast.error('Upload failed!',{
+          description : error.message
         });
   }
  
@@ -518,9 +511,9 @@ const handleUpload = async () => {
           </Badge>
 
           
-           <Badge className={`${getStatusColor(product.status?.name)}`} >
-                {product.status?.name}
-            </Badge>
+          <Badge className={`${getStatusColor(product.status?.name)}`} >
+              {product.status?.name}
+          </Badge>
           
         </div>
 
@@ -719,7 +712,7 @@ const handleUpload = async () => {
                         {isDragging ? 'Drop files here' : 'Drop files here or click to browse'}
                       </p>
                       <p className="text-sm text-slate-500 mt-1">
-                        Supports JPG, PNG, PDF files up to 4MB
+                        Supports JPG, PNG, PDF files 
                       </p>
                     </div>
                     <input

@@ -16,9 +16,7 @@ const ProductHistory = (productId) => {
     const [error, setError] = useState("");
     const [loadingProductHistory, setLoadingProductHistory] = useState(true);
     const [loading, setLoading] = useState(true);
-
-    // const [employeeName, setEmployeeName] = useState();
-
+    
     const fetchProductHistory = async ()=>{
 
         try {

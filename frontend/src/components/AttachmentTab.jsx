@@ -12,46 +12,31 @@ import {
   X,
   Plus
 } from 'lucide-react';
+import { toast } from 'sonner';
+import productsFilesService, { productFilesService } from '@/services/productFilesService';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 const AttachmentTab = (productId) => {
 
-  
-  const [error, setError] = useState("");
   const [loadingProductFiles, setLoadingProductFiles] = useState(true);
   const [loading, setLoading] = useState(true);
-  
-  const [attachments, setAttachments] = useState([
-    // {
-    //   id: 1,
-    //   name: 'Product_Specifications.pdf',
-    //   size: '2.4 MB',
-    //   type: 'pdf',
-    //   uploadDate: '2024-06-20',
-    //   category: 'Documentation'
-    // },
-    
-  ]);
+  const [attachments, setAttachments] = useState([]);
 
 
   const fetchProductHistory = async ()=>{
 
-        try {
-            
-          const response = await fetch(`${API_BASE_URL}/products/${productId.productId}/files`);
-          if (response.ok) {
-
-            const data = await response.json();
-
-            // console.log(data)
-            setAttachments(data);
-
-          } else {
-            setError("Failed to load product files ");
-          }
-        } catch (err) {
-          setError("Error loading product files: " + err.message);
+        try {            
+          const result = await productsFilesService.getProductFilesById(productId.productId);
+          if (!result) {   
+            toast.error("Failed to load product files");
+            return;
+          } 
+          setAttachments(result);
+        } catch (err) {      
+          toast.error("Error loading product files: ",{
+            description:err.message
+          })
         } finally {
           setLoadingProductFiles(false);  
           setTimeout(() => {
@@ -73,12 +58,6 @@ const AttachmentTab = (productId) => {
       default:
         return <File className="h-5 w-5 text-gray-600" />;
     }
-  };
-
- 
-
-  const handleRemoveAttachment = (id) => {
-    setAttachments(attachments.filter(attachment => attachment.id !== id));
   };
 
   const handleDownload = async (attachment) => {
@@ -108,23 +87,21 @@ const AttachmentTab = (productId) => {
 
     
     } catch (error) {
-      console.error('Download error:', error);
-      // You can add a toast notification here
-      alert('Failed to download file. Please try again.');
+      toast.info('Failed to download file. Please try again.',{
+        description: error.message
+      });
     }
   };
 
   const handlePreview = (attachment) => {
     try {
-      // Construct the file URL - adjust path based on where your files are stored
       const fileUrl = `${API_BASE_URL}/${attachment.file_path}`;
-      
-      // Open file in new tab
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
       
-    } catch (error) {
-      console.error('Preview error:', error);
-      alert('Failed to open file preview. Please check if the file exists.');
+    } catch (error) {     
+      toast.info('Failed to open file preview. Please check if the file exists.',{
+        description: error.message
+      });
     }
   };
 
@@ -167,16 +144,11 @@ const AttachmentTab = (productId) => {
                       <h4 className="text-sm font-medium text-gray-900 truncate">
                         {attachment.file_path.split(/[/\\]/).pop()}
                       </h4>
-                      <div className="flex items-center space-x-2 mt-1">
-                        {/* <span className="text-xs text-gray-500">{attachment.size}</span>
-                        <span className="text-xs text-gray-400">•</span> */}
+                      <div className="flex items-center space-x-2 mt-1">                       
                         <span className="text-xs text-gray-500">{attachment.uploaded_at}</span>
                       </div>
                     </div>
                     
-                    {/* <Badge className={getCategoryColor(attachment.category)}>
-                      {attachment.category}
-                    </Badge> */}
                   </div>
                   
                   <div className="flex items-center space-x-2 ml-4">
@@ -198,14 +170,6 @@ const AttachmentTab = (productId) => {
                       <Download className="h-4 w-4" />
                     </Button>
                     
-                    {/* <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveAttachment(attachment.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button> */}
                   </div>
                 </div>
               ))}
@@ -215,15 +179,7 @@ const AttachmentTab = (productId) => {
           {attachments.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>{attachments.length} attachment{attachments.length > 1 ? 's' : ''} total</span>
-                {/* <span>
-                  Total size: {
-                    attachments.reduce((total, att) => {
-                      const sizeInMB = parseFloat(att.size.replace(/[^\d.]/g, ''));
-                      return total + sizeInMB;
-                    }, 0).toFixed(1)
-                  } MB
-                </span> */}
+                <span>{attachments.length} attachment{attachments.length > 1 ? 's' : ''} total</span>              
               </div>
             </div>
           )}

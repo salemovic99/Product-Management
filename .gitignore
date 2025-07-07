@@ -1,4 +1,5 @@
 qr_output
-uploaded_files
+uploaded_files_data
 test
 .vscode
+.env
