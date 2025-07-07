@@ -9,10 +9,10 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
-
-const positionSchema = z.object({
-  name: z.coerce.string().min(3, { message: 'Position name is required' }),
-});
+import { positionSchema } from '@/schemas/position';
+// const positionSchema = z.object({
+//   name: z.coerce.string().min(3, { message: 'Position name is required' }),
+// });
 
 export const PositionForm = ({
   open,

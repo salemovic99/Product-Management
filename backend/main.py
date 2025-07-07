@@ -256,10 +256,20 @@ async def read_products(
         search=search)
     return products
 
+@app.get("/products/warehouse/count", response_model=dict)
+async def get_products_in_warehouse_count(db: AsyncSession = Depends(get_db)):
+    count = await crud.get_products_in_warehouse_count(db)
+    return {"count": count}
+
 @app.get("/products/warehouse", response_model=List[schemas.Product])
 async def read_products_in_warehouse(skip: int = 0, limit: int = 100, db: AsyncSession= Depends(get_db)):
     products = await crud.get_products_in_warehouse(db, skip=skip, limit=limit)
     return products
+
+@app.get("/products/assigned/count", response_model=dict)
+async def read_products_assigned_to_employees_count(db: AsyncSession = Depends(get_db)):
+    count = await crud.get_products_assigned_to_employees_count(db)
+    return {"count": count}
 
 @app.get("/products/assigned", response_model=List[schemas.Product])
 async def read_products_assigned_to_employees(skip: int = 0, limit: int = 100, db: AsyncSession= Depends(get_db)):

@@ -11,7 +11,7 @@ from fastapi import HTTPException, Query
 import os
 import shutil
 import time
-from sqlalchemy import String
+from sqlalchemy import String, func
 
 # Location CRUD operations
 async def create_location(db: AsyncSession, location: schemas.LocationCreate):
@@ -259,11 +259,19 @@ async def get_product(db: AsyncSession, product_id: int):
     return result.scalars().first()
 
 async def get_product_by_serial(db: AsyncSession, serial_number: str):
-    result = await db.execute(select(models.Product).filter(models.Product.serial_number == serial_number))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.serial_number == serial_number))
     return result.scalars().first()
 
 async def get_product_by_our_serial(db: AsyncSession, our_serial_number: str):
-    result = await db.execute(select(models.Product).filter(models.Product.our_serial_number == our_serial_number))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.our_serial_number == our_serial_number))
     return result.scalars().first()
 
 async def get_products(
@@ -307,20 +315,49 @@ async def get_products(
     result = await db.execute(query)
     return result.scalars().all()
 
+
+async def get_products_in_warehouse_count(db):
+    result = await db.execute(
+        select(func.count(models.Product.id)).where(models.Product.in_warehouse == True)
+    )
+    return result.scalar()
+
 async def get_products_in_warehouse(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Product).filter(models.Product.in_warehouse == True).offset(skip).limit(limit))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.in_warehouse == True).offset(skip).limit(limit))
     return result.scalars().all()
 
+async def get_products_assigned_to_employees_count(db):
+    result = await db.execute(
+        select(func.count(models.Product.id)).where(models.Product.in_warehouse == False)
+    )
+    return result.scalar()
+
 async def get_products_assigned_to_employees(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Product).filter(models.Product.in_warehouse == False).offset(skip).limit(limit))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.in_warehouse == False).offset(skip).limit(limit))
     return result.scalars().all()
 
 async def get_products_by_location(db: AsyncSession, location_id: int, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Product).filter(models.Product.location_id == location_id).offset(skip).limit(limit))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.location_id == location_id).offset(skip).limit(limit))
     return result.scalars().all()
 
 async def get_products_by_employee(db: AsyncSession, employee_id: str, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Product).filter(models.Product.employee_id == employee_id).offset(skip).limit(limit))
+    result = await db.execute(select(models.Product).options(
+            selectinload(models.Product.status),
+            selectinload(models.Product.employee).selectinload(models.Employee.position),
+            selectinload(models.Product.location)
+        ).filter(models.Product.employee_id == employee_id).offset(skip).limit(limit))
     return result.scalars().all()
 
 async def update_product(db: AsyncSession, product_id: int, product: schemas.ProductUpdate):
