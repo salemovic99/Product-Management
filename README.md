@@ -50,6 +50,22 @@ git clone https://github.com/salemovic99/Product-Management.git
 cd Product-Management
 ```
 
+## 🔧 Environment Variables Setup
+
+To run the project securely and properly in **production** (or when using Docker), you need to create a `.env` file at the **root of the project** (`Product-Management/.env`) and define the following environment variables:
+
+### 📄 .env (in the root)
+
+```env
+# Clerk authentication secret key (from your Clerk dashboard)
+CLERK_SECRET_KEY=your-clerk-secret-key
+
+# PostgreSQL database settings
+POSTGRES_USER=your_postgres_username
+POSTGRES_PASSWORD=your_postgres_password
+POSTGRES_DB=your_database_name
+```
+
 ### 2. Run with Docker Compose
 
 ```bash
