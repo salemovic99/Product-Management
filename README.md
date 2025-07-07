@@ -79,6 +79,20 @@ docker-compose up --build
 
 ## 💻 Manual Setup (Without Docker)
 
+### 🛠️ Backend Environment Variables
+
+In addition to the root `.env` file used by Docker, the **FastAPI backend** also requires a separate `.env` file located inside the `backend/` folder when running manually (without Docker).
+
+### 📄 `backend/.env`
+
+Create a `.env` file in the `backend/` directory with the following content:
+
+```env
+# PostgreSQL async connection string
+DATABASE_URL=postgresql+asyncpg://username:your_password@localhost:5432/your_database
+
+```
+
 ### Backend (FastAPI)
 
 ```bash
@@ -91,6 +105,25 @@ uvicorn main:app --reload
 
 ### Frontend (Next.js)
 
+### 🌐 Frontend Environment Variables
+
+The Next.js frontend uses a `.env.local` file to store environment-specific variables such as API URLs and Clerk credentials.
+
+### 📄 `frontend/.env.local`
+
+Create a `.env.local` file inside the `frontend/` directory with the following content:
+
+```env
+# Public Clerk key (used in the browser)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+
+# Backend API URL (used by frontend to make API calls)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+
+# Clerk secret key (only used during server-side rendering if needed)
+CLERK_SECRET_KEY=your-clerk-secret-key
+```
+
 ```bash
 cd frontend
 npm install
@@ -101,7 +134,7 @@ npm run dev
 
 ## 🔐 API Endpoints
 
-The FastAPI backend exposes a RESTful API for managing products, employees, locations, and QR code generation.
+The FastAPI backend exposes a RESTful API for managing products, employees, positions, locations, and QR code generation.
 
 You can explore and test the API using the interactive Swagger UI:
 
