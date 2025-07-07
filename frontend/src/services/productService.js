@@ -112,6 +112,50 @@ export class productService{
    }
   }
 
+  async getProductsInWarehouseCount() {
+   try {
+      const response = await fetch(`${this.apiBaseUrl}/products/warehouse/count`);
+      const responseBody = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errorMessage =
+          responseBody?.detail ||
+          responseBody?.message ||
+          `Server returned ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return responseBody.count;
+
+   } catch (error) {
+    throw new Error(
+      error.message || 'Unable to connect to the server. Please try again later.'
+    )
+   }
+  }
+
+  async getProductsAssignedToEmployeeCount() {
+   try {
+      const response = await fetch(`${this.apiBaseUrl}/products/assigned/count`);
+      const responseBody = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const errorMessage =
+          responseBody?.detail ||
+          responseBody?.message ||
+          `Server returned ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return responseBody.count;
+
+   } catch (error) {
+    throw new Error(
+      error.message || 'Unable to connect to the server. Please try again later.'
+    )
+   }
+  }
+
   async createProduct(productData) {
     
     try {

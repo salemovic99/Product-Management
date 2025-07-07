@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 import { z } from 'zod';
 import {
@@ -56,6 +56,16 @@ export const PositionForm = ({
       onSubmit(e);
     }
   };
+
+  useEffect(() => {
+    if (!open) {
+      setErrors({});
+    }
+  }, [open]);
+  
+  useEffect(() => {
+    setErrors({});
+  }, [editingId]);
 
   if (!open) return null;
 

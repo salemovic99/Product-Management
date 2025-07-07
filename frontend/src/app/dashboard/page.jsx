@@ -5,6 +5,8 @@ import {
   Users,
   MapPin,
   BarChart3,
+  Cog,
+  Warehouse
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -21,6 +23,8 @@ const Dashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
 
   const [productsCount, setProductsCount] = useState(null);
+  const [productsInWarehouseCount, setProductsInWarehouseCount] = useState(null);
+  const [productsAssignedCount, setProductsAssignedCount] = useState(null);
   const [employeesCount, setEmployeesCount] = useState(null);
   const [locationsCount, setLocationsCount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,11 +33,15 @@ const Dashboard = () => {
     
     try {
       const productsCount = await productsService.getProductsCount();
+      const productsInWarehouseCounts = await productsService.getProductsInWarehouseCount();
+      const productsAssignedCounts = await productsService.getProductsAssignedToEmployeeCount();
       const employeesCount= await employeesService.getEmployeeCount();
       const locationsCount = await locationsService.getLocationCount();
 
     
       setProductsCount(productsCount);
+      setProductsInWarehouseCount(productsInWarehouseCounts);
+      setProductsAssignedCount(productsAssignedCounts);
       setEmployeesCount(employeesCount);
       setLocationsCount(locationsCount);
       
@@ -55,7 +63,9 @@ const Dashboard = () => {
   const stats = [
     { name: "Total Products", value: productsCount, icon: Package },
     { name: "Total Employees", value: employeesCount, icon: Users },
-    { name: "Total Locations", value: locationsCount, icon: MapPin }
+    { name: "Total Locations", value: locationsCount, icon: MapPin },
+    { name: "Total Products in warehouse", value: productsInWarehouseCount, icon: Warehouse },
+    { name: "Total Assigned Products ", value: productsAssignedCount, icon: Cog }
   ];
 
   if(loading)
@@ -124,7 +134,7 @@ const Dashboard = () => {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {stats.map((stat) => (
-                <Card key={stat.name} className="hover:shadow-lg transition-shadow duration-200">
+                <Card key={stat.name} className={`${stat.icon == Warehouse ? 'col-span-2' : ''} hover:shadow-lg transition-shadow duration-200`}>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       {stat.name}
