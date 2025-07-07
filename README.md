@@ -50,7 +50,7 @@ git clone https://github.com/salemovic99/Product-Management.git
 cd Product-Management
 ```
 
-## 🔧 Environment Variables Setup
+### 🔧 Environment Variables Setup
 
 To run the project securely and properly in **production** (or when using Docker), you need to create a `.env` file at the **root of the project** (`Product-Management/.env`) and define the following environment variables:
 
@@ -72,8 +72,8 @@ POSTGRES_DB=your_database_name
 docker-compose up --build
 ```
 
-- Frontend: http://localhost:3000  
-- Backend API: http://localhost:8000/docs
+- Frontend: <http://localhost:3000>  
+- Backend API: <http://localhost:8000/docs>
 
 ---
 
@@ -101,9 +101,36 @@ npm run dev
 
 ## 🔐 API Endpoints
 
-- Swagger Docs: `http://localhost:8000/docs`
-- Create Product: `POST /products/`
-- Get All Products: `GET /products/`
-- Generate QR: Automatically generated on creation
+The FastAPI backend exposes a RESTful API for managing products, employees, locations, and QR code generation.
+
+You can explore and test the API using the interactive Swagger UI:
+
+📄 **Swagger UI:**  
+`http://localhost:8000/docs`
+
+---
+
+### 📦 Product Endpoints
+
+| Method | Endpoint            | Description                         |
+|--------|---------------------|-------------------------------------|
+| `GET`  | `/products/`        | Get a paginated list of products    |
+| `GET`  | `/products/{id}`    | Get a single product by ID          |
+| `POST` | `/products/`        | Create a new product                |
+| `PUT`  | `/products/{id}`    | Update an existing product          |
+| `DELETE` | `/products/{id}`  | Delete a product by ID              |
+
+#### 📥 Example: Create a Product
+
+```json
+POST /products/
+{
+  "name": "MacBook Pro",
+  "description": "16-inch Apple laptop",
+  "status_id": 1,
+  "location_id": 2,
+  "employee_id": 5
+}
+```
 
 ---
