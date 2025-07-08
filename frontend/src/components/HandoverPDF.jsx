@@ -173,18 +173,13 @@ const styles = StyleSheet.create({
   },
 });
 
-export const DeliveryPDF = ({ data = {} }) => {
+export const HandoverPDF = ({ data = {} }) => {
  
   const employee = data.employee || {};
   const location = data.location || {};
-  
-  const getConditionText = (inWarehouse) => {
-    return inWarehouse ? 'In Warehouse' : 'New';
-  };
-  
-  
+
   const assetDescription = data.name ? 
-    `${data.name}\n(${data.serial_number || data.our_serial_number ||  'N/A'})` : 
+    `${data.name}\n[${data.serial_number || data.our_serial_number ||  'N/A'}]` : 
     'Asset Name Not Specified';
   
   return (
@@ -204,7 +199,7 @@ export const DeliveryPDF = ({ data = {} }) => {
           
           <View style={styles.employeeRow}>
             <Text style={styles.employeeLabel}>Job Title:</Text>
-            <Text style={styles.employeeValue}>{employee.position?.name || "Not Specified"}</Text>
+            <Text style={styles.employeeValue}>{employee?.position?.name || "Not Specified"}</Text>
           </View>
           
           <View style={styles.employeeRow}>
@@ -236,10 +231,8 @@ export const DeliveryPDF = ({ data = {} }) => {
             <Text style={[styles.tableCell, styles.colDescription]}>{assetDescription}</Text>
             <Text style={[styles.tableCell, styles.colQuantity]}>1</Text>
             <Text style={[styles.tableCell, styles.colValue]}>-</Text>
-            <Text style={[styles.tableCell, styles.colCondition]}>{getConditionText(data.in_warehouse)}</Text>
-            <Text style={[styles.tableCellLast, styles.colNotes]}>
-              {data.note}
-            </Text>
+            <Text style={[styles.tableCell, styles.colCondition]}>{data?.status?.name}</Text>
+            <Text style={[styles.tableCellLast, styles.colNotes]}></Text>
           </View>
           
           {/* Empty Rows */}
@@ -273,7 +266,7 @@ export const DeliveryPDF = ({ data = {} }) => {
             
             <View style={styles.signatureField}>
               <Text style={styles.signatureLabel}>Name:</Text>
-              <Text style={styles.signaturePrefilledName}>{employee.name || ''}</Text>
+              <View style={styles.signatureLine} />
             </View>
             
             <View style={styles.signatureField}>

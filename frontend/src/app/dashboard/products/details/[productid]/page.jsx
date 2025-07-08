@@ -39,6 +39,7 @@ import AttachmentTab from '@/components/AttachmentTab';
 import ReassignStatus from '@/components/ReassignStatus';
 import productsService from '@/services/productService';
 import productsFilesService from '@/services/productFilesService';
+import PrintHandoverPdf from '@/components/PrintHandoverPdf';
 
 export default function DetailsPage() {
 
@@ -590,15 +591,12 @@ const handleUpload = async () => {
             <Card className="shadow-sm border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader className="pb-4">
 
-                <CardTitle className="flex items-center justify-between ">                 
+                <CardTitle className=" ">                 
                   <div className='flex items-center space-x-2'>
                      <User className="h-5 w-5 " />
                       <span>Assignment Details</span>  
                   </div>
-
-                 <div >
-                  <DownloadPDFButton data={product}  onProductUpdate={setProduct} />
-                 </div>
+  
                 </CardTitle>
 
 
@@ -662,7 +660,7 @@ const handleUpload = async () => {
                             ID: {product.location?.id}
                           </p>
                           <a
-                            href={`https://${product.location?.google_map_link}`}
+                            href={`${product.location?.google_map_link}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-700 text-sm font-medium underline"
@@ -834,6 +832,8 @@ const handleUpload = async () => {
                 <ReassignEmployee product={product} onProductUpdate={setProduct} ></ReassignEmployee>
                 <TransferLocation  product={product} onProductUpdate={setProduct} ></TransferLocation>
                 <ReassignStatus  product={product} onProductUpdate={setProduct} ></ReassignStatus>
+                <DownloadPDFButton data={product}  />
+                <PrintHandoverPdf data={product}  onProductUpdate={setProduct} />
                 <Button className="w-full justify-start cursor-pointer" variant="outline" 
                  onClick={printQRCode} disabled={!product.dynamic_qr_code || loadingProduct}
                 >
@@ -841,11 +841,9 @@ const handleUpload = async () => {
                   Print QR Code
                 </Button>
 
-                
               </CardContent>
             </Card>
-
-            
+    
           </div>
         </div>
 

@@ -10,97 +10,63 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../components/ui/alert-dialog"
-
+import { FileDown  } from 'lucide-react';
 import { Button } from '../components/ui/button'; 
 import { toast } from 'sonner';
 import  { useState } from 'react';
-export default function DownloadPDFButton({ data, onProductUpdate }) {
-  const now = new Date();
-  const formattedDate = now.toLocaleString(undefined, {
-  dateStyle: "medium",
-  timeStyle: "medium",
-  });
+import productsService from "@/services/productService";
+
+export default function DownloadPDFButton({ data }) {
 
   const [showModal, setShowModal] = useState(false);
   
-
   const downloadPDF = async () => {
-    const res = await fetch('/api/delivery-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) {     
-      // alert(`Failed to download PDF: ${res.statusText}`);
-      toast.error(`Failed to download PDF: ${res.statusText}`);
-      return;
-    }
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `delivery-form-${data?.id}-${data.employee?.name}.pdf`;
-    a.click();
-
-    handleUpdate(data.id);
-
-  };
-
-  const handleUpdate = async (productID) => {
-  
-     const data = {      
-      in_warehouse: true,
-      employee_id: null
-    };
 
     try {
-
-      const response = await fetch(`http://localhost:8000/products/${productID}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        const res = await fetch('/api/handover-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
 
-       if (!response.ok){
-          toast.error(`Failed to update product: ${response.statusText}`)           
-          return;                   
-        }
+      if (!res.ok) {     
+        toast.error(`Failed to download PDF:`,{
+          description:res.statusText
+        });
+        return;
+      }
 
-     
-      toast.success('Product updated successfully',{
-                          description : 'create at ' + formattedDate
-                        });
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
 
-      const updatedProduct = await fetch(`http://localhost:8000/products/${productID}`).then(res => res.json());
-        onProductUpdate(updatedProduct);
-     
-    } catch (err) {      
-      toast.error(err.message || "Something went wrong")
-      
-    } finally {
-      // setLoading(false);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `handover-form-${data?.id}-${data.employee?.name}.pdf`;
+      a.click();
+    } catch (error) {
+      toast.error("Failed to download PDF:",{
+        description:error.message
+      })
     }
+    
   };
+
 
   return (
     <>
   
         <AlertDialog open={showModal} onOpenChange={setShowModal}>
           <AlertDialogTrigger asChild>  
-            <Button variant={`outline`} className={`cursor-pointer`}  disabled={data === null || data === undefined || data.in_warehouse}>
-              Download PDF    
+            <Button variant={`outline`} className={`cursor-pointer  w-full justify-start`}  disabled={data === null || data === undefined || data.in_warehouse}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Download Asset Handover PDF    
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Download Delivery PDF</AlertDialogTitle>
+              <AlertDialogTitle>Download Handover PDF</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to download the delivery PDF? This will update the product status to "in warehouse".
+                Are you sure you want to download the Handover PDF? .
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -109,9 +75,7 @@ export default function DownloadPDFButton({ data, onProductUpdate }) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        
       
-    
     </>
    
   );
