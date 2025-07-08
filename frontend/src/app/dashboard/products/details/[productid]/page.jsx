@@ -57,7 +57,7 @@ export default function DetailsPage() {
 
     const fetchProduct = async () => {
         try {
-
+          
           const result = await productsService.getProductById(productId);
           if (!result) {
             setError("Failed to load product data");

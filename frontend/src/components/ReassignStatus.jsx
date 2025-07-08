@@ -5,6 +5,8 @@ import { Loader2, Building2, User, ArrowLeftRight, Route  } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import statusesService from '@/services/statusService';
+import productsService from '@/services/productService';
 
 
 export default function ReassignStatus({ product, onProductUpdate  }) {
@@ -28,15 +30,18 @@ const fetchStatuses = async () => {
 
   setLoadingStatuses(true);
   try {
-    const response = await fetch('http://localhost:8000/statuses');
-    if (response.ok) {
-      const data = await response.json();
-      setStatuses(data);
-    } else {
+    const result = await statusesService.getAllStatuses();
+    if (!result) {      
       setError("Failed to load statuses");
-    }
+      toast.error("Failed to load statuses");
+      return;
+    } 
+    setStatuses(result);
   } catch (err) {
     setError("Error loading statuses: " + err.message);
+    toast.error("Error loading statuses:",{
+      description:err.message
+    })
   } finally {
     setLoadingStatuses(false);
   }
@@ -50,39 +55,31 @@ const handleTransferLocation = async () => {
   }
 
   setReassignLoading(true);
-  console.log('reassign product to status:', selectedStatusId);
-  
-  try {
-    const response = await fetch(`http://localhost:8000/products/${product.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({             
-        status_id:  parseInt(selectedStatusId),    
-      }),
-    });
 
-    if (response.ok) {
-    
-        setShowReassignModal(false);
-        setSelectedStatusId('');
-        const updatedProduct = await fetch(`http://localhost:8000/products/${product.id}`).then(res => res.json());
-        onProductUpdate(updatedProduct);
-      
-      toast.success('Update Statues Successfully!',{
-                          description : 'updated status at ' + formattedDate
-                        }); 
-        
-       
-    } else {
-      
-      toast.error('Failed to Update Status');
+  try {
+    const data = {
+       status_id:  parseInt(selectedStatusId)
     }
+
+    const result = await productsService.updateProduct(product.id, data);
+
+    if (!result) {
+      toast.error('Failed to Update Status');
+      return;  
+    } 
+
+    setShowReassignModal(false);
+    setSelectedStatusId('');
+    const updatedProduct = await productsService.getProductById(product.id);
+    onProductUpdate(updatedProduct);
+    
+    toast.success('Update Statues Successfully!',{
+                    description : 'updated status at ' + formattedDate
+                  }); 
 
   } 
   catch (err) {
-    toast.error('Error Update Employee: ' + err.message);
+    toast.error('Error Update Status: ' + err.message);
   } finally {
     setReassignLoading(false);
   }
@@ -97,7 +94,7 @@ const openTransferModal = () => {
 
 return (
 
-            <div>
+        <div>
                 
            
             <Button 
@@ -193,7 +190,7 @@ return (
                 </DialogFooter>
             </DialogContent>
             </Dialog>
-            </div>
+        </div>
 
 )
 
