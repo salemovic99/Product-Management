@@ -400,7 +400,7 @@ async def update_product(db: AsyncSession, product_id: int, product: schemas.Pro
             previous_location_id=changes.get("location", (None, None))[0],
             new_location_id=changes.get("location", (None, None))[1],
             note="Product updated",
-            changed_by="admin"
+            changed_by=product.changed_by or "unknown"
         )
         await create_product_history(db, history)
 

@@ -5,12 +5,17 @@ import { Loader2, Building2, User, ArrowLeftRight  } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-
+import { useAuth, useUser } from "@clerk/nextjs";
+import employeesService, { employeeService } from '@/services/employeeService';
+import productsService from '@/services/productService';
 
 export default function ReassignEmployee({ product, onProductUpdate  }) {
 
+  const { user } = useUser();
 
-    
+  const fullName = user?.fullName;
+  const email = user?.emailAddresses[0]?.emailAddress;
+
     const now = new Date();
         const formattedDate = now.toLocaleString(undefined, {
         dateStyle: "medium",
@@ -28,15 +33,19 @@ const fetchEmployees = async () => {
 
   setLoadingEmployees(true);
   try {
-    const response = await fetch('http://localhost:8000/employees');
-    if (response.ok) {
-      const employeesData = await response.json();
-      setEmployees(employeesData);
-    } else {
+    const result = await employeesService.getAllEmployees();
+    if (!result) {
       setError("Failed to load employees");
+      toast.error("Failed to load employees");
+      return;
     }
+
+    setEmployees(result);
   } catch (err) {
     setError("Error loading employees: " + err.message);
+    toast.error("Error loading employees:",{
+      description: err.message
+    })
   } finally {
     setLoadingEmployees(false);
   }
@@ -45,43 +54,32 @@ const fetchEmployees = async () => {
 
 const handleTransferLocation = async () => {
   if (!selectedEmployeeId) {
-    alert('Please select an employee');
+    toast.info('Please select an employee');
     return;
   }
 
   setReassignLoading(true);
-  console.log('reassign product to employee:', selectedEmployeeId);
-  
+ 
   try {
-    const response = await fetch(`http://localhost:8000/products/${product.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: product.name,               
+    const data = {               
         employee_id:  parseInt(selectedEmployeeId),
         in_warehouse : false,
-        id: product.id,        
-      }),
-    });
+        changed_by: `${fullName} <${email}>`        
+      }
+    const result = await productsService.updateProduct(product.id,data)
 
-    if (response.ok) {
-    
-        setShowReassignModal(false);
-        setSelectedEmployeeId('');
-        const updatedProduct = await fetch(`http://localhost:8000/products/${product.id}`).then(res => res.json());
-        onProductUpdate(updatedProduct);
-      
-      toast.success('Reassign Employee successfully!',{
-                          description : 'updated Location at ' + formattedDate
-                        }); 
-        
-       
-    } else {
-      
+    if (!result) {
       toast.error('Failed to Reassign Employee');
-    }
+      return;
+    } 
+
+    setShowReassignModal(false);
+    setSelectedEmployeeId('');
+    const updatedProduct = await productsService.getProductById(product.id);
+    onProductUpdate(updatedProduct);
+    toast.success('Reassign Employee successfully!',{
+                      description : 'updated Location at ' + formattedDate
+                    }); 
 
   } 
   catch (err) {

@@ -96,6 +96,7 @@ class ProductUpdate(BaseModel):
     note: Optional[str] = None
     dynamic_qr_code: Optional[str] = None
     status_id: Optional[int]=None
+    changed_by: Optional[str]=None
 
 class Product(ProductBase):
     id: int

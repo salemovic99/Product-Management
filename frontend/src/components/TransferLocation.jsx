@@ -5,11 +5,17 @@ import { Loader2, Building2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { useAuth, useUser } from "@clerk/nextjs";
+import locationsService from '@/services/locationService';
+import productsService, { productService } from '@/services/productService';
 
 
 export default function TransferLocation({ product, onProductUpdate  }) {
 
-
+    const { user } = useUser();
+  
+    const fullName = user?.fullName;
+    const email = user?.emailAddresses[0]?.emailAddress;
     
     const now = new Date();
         const formattedDate = now.toLocaleString(undefined, {
@@ -25,21 +31,22 @@ export default function TransferLocation({ product, onProductUpdate  }) {
 
 const fetchLocations = async () => {
 
-
-
-     
-
   setLoadingLocations(true);
   try {
-    const response = await fetch('http://localhost:8000/locations');
-    if (response.ok) {
-      const locationsData = await response.json();
-      setLocations(locationsData);
-    } else {
+    const result = await locationsService.getAllLocations();
+
+    if (!result) {
       setError("Failed to load locations");
+      toast.error("Failed to load locations");
+      return;
     }
+
+    setLocations(result);
   } catch (err) {
     setError("Error loading locations: " + err.message);
+    toast.error("Error loading locations: ",{
+      description:err.message
+    })
   } finally {
     setLoadingLocations(false);
   }
@@ -48,52 +55,30 @@ const fetchLocations = async () => {
 
 const handleTransferLocation = async () => {
   if (!selectedLocationId) {
-    alert('Please select a location');
+    toast.info('Please select a location');
     return;
   }
 
   setTransferLoading(true);
-  console.log('Transferring product to location:', selectedLocationId);
-  
+ 
   try {
-    const response = await fetch(`http://localhost:8000/products/${product.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: product.name,
-        serial_number: product.serial_number,
-        our_serial_number: product.our_serial_number,
-        location_id:  parseInt(selectedLocationId),
-        employee_id:  parseInt(product.employee_id),
-        in_warehouse: product.in_warehouse,
-        purchasing_date: product.purchasing_date,
-        warranty_expire: product.warranty_expire,
-        note: product.note,
-        dynamic_qr_code: product.dynamic_qr_code,
-        id: product.id,
-        
-      }),
-    });
-
-    if (response.ok) {
-    
-      setShowTransferModal(false);
-      setSelectedLocationId('');
-    const updatedProduct = await fetch(`http://localhost:8000/products/${product.id}`).then(res => res.json());
-      onProductUpdate(updatedProduct);
-      
-      toast.success('Location transferred successfully!',{
-                          description : 'updated Location at ' + formattedDate
-                        }); 
-        
-       
-    } else {
-      
-      toast.error('Failed to transfer location');
+    const data = {
+      location_id:  parseInt(selectedLocationId),
+      changed_by: `${fullName} <${email}>`  
     }
+    const result = await productsService.updateProduct(product.id,data);
 
+    if (!result) {
+      toast.error('Failed to transfer location');
+      return;
+    } 
+    setShowTransferModal(false);
+    setSelectedLocationId('');
+    const updatedProduct = await productsService.getProductById(product.id);
+    onProductUpdate(updatedProduct);
+    toast.success('Location transferred successfully!',{
+                        description : 'updated Location at ' + formattedDate
+                      });       
   } 
   catch (err) {
     toast.error('Error transferring location: ' + err.message);
@@ -102,7 +87,6 @@ const handleTransferLocation = async () => {
   }
 };
 
-// Add this function to open the modal
 const openTransferModal = () => {
   setShowTransferModal(true);
   fetchLocations();
@@ -111,7 +95,7 @@ const openTransferModal = () => {
 
 return (
 
-            <div>
+        <div>
                 
            
             <Button 
@@ -119,18 +103,18 @@ return (
             variant="outline"
             onClick={openTransferModal}
             >
-            <Building2 className="h-4 w-4 mr-2" />
-            Transfer Location
+              <Building2 className="h-4 w-4 mr-2" />
+              Transfer Location
             </Button>
 
           
             <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                <DialogTitle>Transfer Location</DialogTitle>
-                <DialogDescription>
-                    Select a new location for {product.name}
-                </DialogDescription>
+                  <DialogTitle>Transfer Location</DialogTitle>
+                  <DialogDescription>
+                      Select a new location for {product.name}
+                  </DialogDescription>
                 </DialogHeader>
                 
                 <div className="grid gap-4 py-4">
@@ -172,33 +156,33 @@ return (
                 </div>
 
                 <DialogFooter>
-                <Button 
-                    variant="outline" 
-                    onClick={() => {
-                    setShowTransferModal(false);
-                    setSelectedLocationId('');
-                    }}
-                    disabled={transferLoading}
-                >
-                    Cancel
-                </Button>
-                <Button 
-                    onClick={handleTransferLocation}
-                    disabled={transferLoading || !selectedLocationId}
-                >
-                    {transferLoading ? (
-                    <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Transferring...
-                    </>
-                    ) : (
-                    'Transfer Location'
-                    )}
-                </Button>
+                    <Button 
+                        variant="outline" 
+                        onClick={() => {
+                        setShowTransferModal(false);
+                        setSelectedLocationId('');
+                        }}
+                        disabled={transferLoading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleTransferLocation}
+                        disabled={transferLoading || !selectedLocationId}
+                    >
+                        {transferLoading ? (
+                        <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Transferring...
+                        </>
+                        ) : (
+                        'Transfer Location'
+                        )}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
             </Dialog>
-            </div>
+        </div>
 
 )
 
