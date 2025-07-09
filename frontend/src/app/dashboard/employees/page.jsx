@@ -131,21 +131,21 @@ const Employees = () => {
 
   return (
 
-    <div className="min-h-screen  bg-gray-50 ">
+    <div className="min-h-screen  bg-gray-50 dark:bg-gray-900 ">
         {/* Header */}
-          <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-950 sticky top-0 z-10">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex items-center space-x-3">
                         
                           <BriefcaseBusiness className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
                           <div>
-                              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Employees</h1>
-                              <p className="text-xs sm:text-sm text-gray-600">Manage your Employees</p>
+                              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Employees</h1>
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage your Employees</p>
                           </div>
                       </div>
                       
-                      <Button className="w-full sm:w-auto" onClick={() => {
+                      <Button className="w-full sm:w-auto dark:bg-purple-500 dark:hover:bg-purple-600 text-white" onClick={() => {
                           setShowForm(true)}}>
                             
                               <Plus className="h-4 w-4" />
@@ -160,7 +160,7 @@ const Employees = () => {
        
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-50 dark:bg-gray-900 border border-red-200 dark:border-red-700 px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}

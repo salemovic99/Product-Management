@@ -31,7 +31,7 @@ export default function Header({ darkMode, setDarkMode,toggleSidebar  }) {
   
   return (
     // Header component for the dashboard
-    <header className="bg-white w-[100%] dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-50">
+    <header className="bg-white w-[100%] dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-50">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center space-x-4">
           <Button
@@ -53,7 +53,7 @@ export default function Header({ darkMode, setDarkMode,toggleSidebar  }) {
             size="sm"
             onClick={() => setDarkMode(!darkMode)}
           >
-            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {darkMode ? <Sun className="w-4 h-4 dark:text-white" /> : <Moon className="w-4 h-4" />}
           </Button>
 
           <SignedOut>

@@ -64,13 +64,13 @@ useEffect(() => {
 }, [editingId]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{editingId ? 'Edit Location' : 'Add New Location'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 ">
           {/* Location Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

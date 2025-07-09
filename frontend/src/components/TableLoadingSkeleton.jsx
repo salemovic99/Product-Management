@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 export default function TableLoadingSkeleton(){
     return (
         
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
               {/* Header */}
-              <div className="bg-white border-b border-gray-200">
+              <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-950">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 dark:text-gray-100">
                       <Skeleton className="w-6 h-6" />
                       <div className="space-y-1">
                         <Skeleton className="w-24 h-4" />
@@ -31,7 +31,7 @@ export default function TableLoadingSkeleton(){
                     <table className="w-full">
                       <thead>
                         {[1, 2, 3, 4].map((_, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <th className="px-6 py-4">
                               <Skeleton className="w-24 h-4" />
                             </th>
@@ -47,9 +47,9 @@ export default function TableLoadingSkeleton(){
                           </tr>
                         ))}
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-950">
                         {[1, 2, 3,4].map((_, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td className="px-6 py-4">
                               <Skeleton className="w-24 h-4" />
                             </td>

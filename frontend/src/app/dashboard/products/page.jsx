@@ -142,20 +142,20 @@ export default function ProductsPage() {
     }
 
     return (
-        <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-50`}>
+        <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-50 dark:bg-gray-900`}>
             
             {/* Header */}
-            <div className={`${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border-b sticky top-0 z-10 dark:bg-gray-800 dark:border-gray-700`}>
+            <div className={`${darkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"} border-b sticky top-0 z-10 dark:bg-gray-800 dark:border-gray-700`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="flex items-center space-x-3">
+                        <div className={`flex items-center space-x-3`}>
                             <Box className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
                             <div>
-                                <h1 className="text-xl sm:text-2xl  font-bold text-gray-900">Products</h1>
-                                <p className="text-xs sm:text-sm text-gray-600">Manage your Products</p>
+                                <h1 className={`text-xl sm:text-2xl  font-bold text-gray-900 dark:text-white `}>Products</h1>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage your Products</p>
                             </div>
                         </div>
-                        <Button className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto dark:bg-purple-500 dark:hover:bg-purple-600 text-white">
                             <Link href="/dashboard/products/add" className="flex items-center justify-center space-x-2 w-full"> 
                                 <Plus className="h-4 w-4" />
                                 <span>Add Product</span>
@@ -167,7 +167,7 @@ export default function ProductsPage() {
 
             {/* Error Message */}
             {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-red-50 dark:bg-gray-900 border border-red-200 dark:border-red-700 text-red-700 px-4 py-3 rounded-lg mb-6 ">
                 {error}
             </div>
             )}
