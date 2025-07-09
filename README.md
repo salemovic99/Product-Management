@@ -153,17 +153,4 @@ You can explore and test the API using the interactive Swagger UI:
 | `PUT`  | `/products/{id}`    | Update an existing product          |
 | `DELETE` | `/products/{id}`  | Delete a product by ID              |
 
-#### 📥 Example: Create a Product
-
-```json
-POST /products/
-{
-  "name": "MacBook Pro",
-  "description": "16-inch Apple laptop",
-  "status_id": 1,
-  "location_id": 2,
-  "employee_id": 5
-}
-```
-
 ---
