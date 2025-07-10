@@ -36,6 +36,7 @@ import { Separator } from '../components/ui/separator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from "@clerk/nextjs";
+import Image from 'next/image';
 
 const DashboardSideBar = ({ sidebarOpen, setSidebarOpen, darkMode }) => {
   // const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -72,9 +73,10 @@ const DashboardSideBar = ({ sidebarOpen, setSidebarOpen, darkMode }) => {
             
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg"></div>
+                <div className="w-8 h-8 bg-gradient-to-r from-slate-800 to-slate-500 rounded-lg"></div>
                 <Link href={'/dashboard'}>
-                <span className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</span>
+                  <Image src={'/logo.png'} alt={'logo'} width={80} height={80}></Image>
+                 {/* <span className="text-xl font-bold text-gray-900 dark:text-white">Dashboard</span> */}
                 </Link>
               </div>
               <Button
@@ -98,7 +100,7 @@ const DashboardSideBar = ({ sidebarOpen, setSidebarOpen, darkMode }) => {
                       variant={isActive ? 'default' : 'ghost'}
                       className={`cursor-pointer w-full justify-start ${
                         isActive
-                          ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                          ? 'bg-slate-700 hover:bg-slate-800 text-white dark:bg-purple-500'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >

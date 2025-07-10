@@ -27,7 +27,7 @@ export default function Home() {
           {/* Logo Container with Animation */}
           <div className="mb-8 animate-pulse">
             <div className="w-24 h-24 mx-auto mb-4  flex items-center justify-center ">
-              <Image src={'/next.svg'} alt="logo" width={90} height={90}></Image>
+              <Image src={'/logo.png'} alt="logo" width={90} height={90}></Image>
             </div>
           </div>
 
